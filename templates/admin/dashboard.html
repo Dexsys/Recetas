@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <h2 class="handwritten">Panel de Administración</h2>
+
+    <div class="admin-section">
+        <h3>Usuarios</h3>
+        <table class="admin-table">
+            <tr>
+                <th>ID</th>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Acciones</th>
+            </tr>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.role }}</td>
+                <td>
+                    {% if user.id != 1 %}
+                    <a href="{{ url_for('admin.change_role', user_id=user.id, new_role='admin') }}">Admin</a> |
+                    <a href="{{ url_for('admin.change_role', user_id=user.id, new_role='colaborador') }}">Colab</a> |
+                    <a href="{{ url_for('admin.change_role', user_id=user.id, new_role='invitado') }}">Invitado</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="admin-section">
+        <h3>Recetas Pendientes de Aprobación</h3>
+        {% if pending_recipes %}
+        <table class="admin-table">
+            <tr>
+                <th>Receta</th>
+                <th>Autor</th>
+                <th>Acciones</th>
+            </tr>
+            {% for recipe in pending_recipes %}
+            <tr>
+                <td>{{ recipe.title }}</td>
+                <td>{{ recipe.author.username }}</td>
+                <td>
+                    <a href="{{ url_for('admin.approve_recipe', recipe_id=recipe.id) }}" class="btn-sm">Aprobar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p>No hay recetas pendientes.</p>
+        {% endif %}
+    </div>
+
+    <div class="admin-section">
+        <h3>Comentarios Pendientes</h3>
+        {% if pending_comments %}
+        <table class="admin-table">
+            <tr>
+                <th>Comentario</th>
+                <th>Receta</th>
+                <th>Autor</th>
+                <th>Acciones</th>
+            </tr>
+            {% for comment in pending_comments %}
+            <tr>
+                <td>{{ comment.text[:50] }}...</td>
+                <td>{{ comment.recipe.title }}</td>
+                <td>{{ comment.author.username }}</td>
+                <td>
+                    <a href="{{ url_for('admin.approve_comment', comment_id=comment.id) }}" class="btn-sm">Aprobar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p>No hay comentarios pendientes.</p>
+        {% endif %}
+        <div class="admin-section" style="display: flex; flex-wrap: wrap; gap: 2rem;">
+            <div style="flex: 1; min-width: 300px;">
+                <h3>Categorías</h3>
+                <form action="{{ url_for('admin.add_item', model_type='category') }}" method="post"
+                    style="display:flex; gap:10px; margin-bottom:1rem;">
+                    <input type="text" name="name" required placeholder="Nueva Categoría"
+                        style="padding:0.5rem; border:1px solid #ccc; border-radius:4px; flex:1;">
+                    <button type="submit" class="btn-primary" style="width:auto; padding:0.5rem 1rem;">Añadir</button>
+                </form>
+                <table class="admin-table">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Acciones</th>
+                    </tr>
+                    {% for cat in categories %}
+                    <tr>
+                        <td>{{ cat.name }}</td>
+                        <td><a href="{{ url_for('admin.delete_item', model_type='category', item_id=cat.id) }}"
+                                class="btn-sm" style="background-color:red;">Eliminar</a></td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <div style="flex: 1; min-width: 300px;">
+                <h3>Tipos de Menú</h3>
+                <form action="{{ url_for('admin.add_item', model_type='menu_type') }}" method="post"
+                    style="display:flex; gap:10px; margin-bottom:1rem;">
+                    <input type="text" name="name" required placeholder="Nuevo Menú"
+                        style="padding:0.5rem; border:1px solid #ccc; border-radius:4px; flex:1;">
+                    <button type="submit" class="btn-primary" style="width:auto; padding:0.5rem 1rem;">Añadir</button>
+                </form>
+                <table class="admin-table">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Acciones</th>
+                    </tr>
+                    {% for menu in menu_types %}
+                    <tr>
+                        <td>{{ menu.name }}</td>
+                        <td><a href="{{ url_for('admin.delete_item', model_type='menu_type', item_id=menu.id) }}"
+                                class="btn-sm" style="background-color:red;">Eliminar</a></td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <div style="flex: 1; min-width: 300px;">
+                <h3>Unidades de Medida</h3>
+                <form action="{{ url_for('admin.add_item', model_type='unit') }}" method="post"
+                    style="display:flex; gap:10px; margin-bottom:1rem;">
+                    <input type="text" name="name" required placeholder="Nueva Unidad"
+                        style="padding:0.5rem; border:1px solid #ccc; border-radius:4px; flex:1;">
+                    <button type="submit" class="btn-primary" style="width:auto; padding:0.5rem 1rem;">Añadir</button>
+                </form>
+                <table class="admin-table">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Acciones</th>
+                    </tr>
+                    {% for unit in units %}
+                    <tr>
+                        <td>{{ unit.name }}</td>
+                        <td><a href="{{ url_for('admin.delete_item', model_type='unit', item_id=unit.id) }}"
+                                class="btn-sm" style="background-color:red;">Eliminar</a></td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Precios de Ingredientes -->
+    <div class="admin-section" id="precios-ingredientes" style="margin-top:2rem;">
+        <h3>💰 Precios de Ingredientes</h3>
+        <p style="color:#666; font-size:0.9rem;">Define cuánto pagaste por una cantidad comercial. Ej: $1.200 por 1 kg de azúcar, $3.500 por 30 huevos, $890 por 500 gr de harina.</p>
+        <form action="{{ url_for('admin.add_ingredient_price') }}" method="post"
+            style="background:#f9f9f9; padding:1rem; border-radius:6px; margin-bottom:1rem;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                <div>
+                    <label style="font-size:0.8rem; display:block; margin-bottom:0.2rem;">Ingrediente</label>
+                    <input type="text" name="name" required placeholder="ej: azúcar, huevo"
+                        style="padding:0.5rem; border:1px solid #ccc; border-radius:4px; min-width:160px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; display:block; margin-bottom:0.2rem;">Precio pagado (CLP)</label>
+                    <input type="number" name="price" required placeholder="ej: 1200"
+                        style="padding:0.5rem; border:1px solid #ccc; border-radius:4px; width:120px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; display:block; margin-bottom:0.2rem;">Cantidad comercial</label>
+                    <input type="number" name="commercial_qty" required value="1" min="0.001" step="any"
+                        style="padding:0.5rem; border:1px solid #ccc; border-radius:4px; width:90px;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; display:block; margin-bottom:0.2rem;">Unidad</label>
+                    <select name="commercial_unit"
+                        style="padding:0.5rem; border:1px solid #ccc; border-radius:4px;">
+                        <optgroup label="Peso / Volumen">
+                            <option value="gr">gr</option>
+                            <option value="kg" selected>kg</option>
+                            <option value="cc">cc</option>
+                            <option value="ml">ml</option>
+                            <option value="l">l</option>
+                        </optgroup>
+                        <optgroup label="Conteo">
+                            <option value="unidades">unidades</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" style="width:auto; padding:0.5rem 1rem;">Guardar</button>
+            </div>
+            <div style="margin-top:0.7rem;">
+                <label style="font-size:0.8rem; display:block; margin-bottom:0.2rem;">URL de referencia (opcional — dónde se obtuvo el precio)</label>
+                <input type="url" name="url_reference" placeholder="https://..."
+                    style="padding:0.5rem; border:1px solid #ccc; border-radius:4px; width:100%; box-sizing:border-box;">
+            </div>
+        </form>
+        {% if ingredient_prices %}
+        <table class="admin-table">
+            <tr>
+                <th>Ingrediente</th>
+                <th>Precio pagado</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>Fuente</th>
+                <th>Acciones</th>
+            </tr>
+            {% for ip in ingredient_prices %}
+            <tr{% if ip.price == 0 %} style="background:#fff8e1;"{% endif %}>
+                <td>
+                    {{ ip.name }}
+                    {% if ip.price == 0 %}
+                    <span style="display:inline-block; margin-left:6px; font-size:0.7rem; background:#ff9800; color:white; padding:1px 6px; border-radius:4px; vertical-align:middle;">Sin valorizar</span>
+                    {% endif %}
+                </td>
+                <td>{% if ip.price > 0 %}${{ "{:,.0f}".format(ip.price).replace(',', '.') }}{% else %}<span style="color:#aaa;">—</span>{% endif %}</td>
+                <td>{{ ip.commercial_qty|int if ip.commercial_qty == ip.commercial_qty|int else ip.commercial_qty }} {{ ip.commercial_unit }}</td>
+                <td style="font-size:0.85rem; color:#555;">
+                    {% if ip.commercial_unit == 'unidades' %}
+                        ${{ "{:,.0f}".format(ip.price / ip.commercial_qty).replace(',', '.') }} / unidad
+                    {% elif ip.commercial_unit == 'gr' %}
+                        ${{ "{:,.0f}".format(ip.price / ip.commercial_qty * 1000).replace(',', '.') }} / kg
+                    {% elif ip.commercial_unit in ['cc', 'ml'] %}
+                        ${{ "{:,.0f}".format(ip.price / ip.commercial_qty * 1000).replace(',', '.') }} / l
+                    {% elif ip.commercial_unit in ['kg', 'l'] %}
+                        ${{ "{:,.0f}".format(ip.price / ip.commercial_qty).replace(',', '.') }} / {{ ip.commercial_unit }}
+                    {% endif %}
+                </td>
+                <td style="font-size:0.8rem;">
+                    {% if ip.url_reference %}
+                    <a href="{{ ip.url_reference }}" target="_blank" rel="noopener noreferrer">Ver fuente ↗</a>
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    <button type="button" class="btn-sm" style="background-color:#3f51b5; margin-right:6px;"
+                        onclick="togglePriceEdit({{ ip.id }})">Editar</button>
+                    <a href="{{ url_for('admin.delete_ingredient_price', price_id=ip.id) }}"
+                        class="btn-sm" style="background-color:red;"
+                        onclick="return confirm('¿Eliminar precio de {{ ip.name }}?')">Eliminar</a>
+                </td>
+            </tr>
+            <tr id="price-edit-{{ ip.id }}" style="display:none; background:#f8f9ff;">
+                <td colspan="6" style="padding:0.8rem; border-top:none;">
+                    <form action="{{ url_for('admin.edit_ingredient_price', price_id=ip.id) }}" method="post"
+                        style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                        <div>
+                            <label style="font-size:0.75rem; display:block;">Ingrediente</label>
+                            <input type="text" name="name" value="{{ ip.name }}" required
+                                style="padding:0.4rem; border:1px solid #ccc; border-radius:4px; width:160px;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; display:block;">Precio</label>
+                            <input type="number" name="price" value="{{ ip.price }}" required
+                                style="padding:0.4rem; border:1px solid #ccc; border-radius:4px; width:120px;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; display:block;">Cantidad</label>
+                            <input type="number" name="commercial_qty" value="{{ ip.commercial_qty }}" required step="any"
+                                style="padding:0.4rem; border:1px solid #ccc; border-radius:4px; width:90px;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; display:block;">Unidad</label>
+                            <select name="commercial_unit" style="padding:0.4rem; border:1px solid #ccc; border-radius:4px;">
+                                <option value="gr" {% if ip.commercial_unit == 'gr' %}selected{% endif %}>gr</option>
+                                <option value="kg" {% if ip.commercial_unit == 'kg' %}selected{% endif %}>kg</option>
+                                <option value="cc" {% if ip.commercial_unit == 'cc' %}selected{% endif %}>cc</option>
+                                <option value="ml" {% if ip.commercial_unit == 'ml' %}selected{% endif %}>ml</option>
+                                <option value="l" {% if ip.commercial_unit == 'l' %}selected{% endif %}>l</option>
+                                <option value="unidades" {% if ip.commercial_unit == 'unidades' %}selected{% endif %}>unidades</option>
+                            </select>
+                        </div>
+                        <div style="min-width:260px; flex:1;">
+                            <label style="font-size:0.75rem; display:block;">URL fuente</label>
+                            <input type="url" name="url_reference" value="{{ ip.url_reference or '' }}"
+                                style="padding:0.4rem; border:1px solid #ccc; border-radius:4px; width:100%; box-sizing:border-box;">
+                        </div>
+                        <button type="submit" class="btn-sm" style="background:#2e7d32;">Guardar</button>
+                        <button type="button" class="btn-sm" style="background:#6c757d;" onclick="togglePriceEdit({{ ip.id }})">Cancelar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p style="color:#999;">No hay precios ingresados aún.</p>
+        {% endif %}
+    </div>
+
+    <!-- Técnicas / Videos -->
+    <div class="admin-section" id="tecnicas" style="margin-top:2rem;">
+        <h3>🎬 Técnicas de Cocina</h3>
+        <form action="{{ url_for('admin.add_technique') }}" method="post"
+            style="background:#f9f9f9; padding:1rem; border-radius:6px; margin-bottom:1rem;">
+            <h4 style="margin-top:0;">Añadir nueva técnica</h4>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+                <div style="flex:1; min-width:180px;">
+                    <label style="font-size:0.8rem; display:block; margin-bottom:0.2rem;">Título</label>
+                    <input type="text" name="title" required placeholder="ej: Merengue Italiano"
+                        style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                </div>
+                <div style="flex:2; min-width:250px;">
+                    <label style="font-size:0.8rem; display:block; margin-bottom:0.2rem;">URL YouTube (watch, embed, youtu.be)</label>
+                    <input type="text" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..."
+                        style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                </div>
+            </div>
+            <div style="margin-top:0.6rem;">
+                <label style="font-size:0.8rem; display:block; margin-bottom:0.2rem;">Descripción</label>
+                <textarea name="description" rows="2"
+                    style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"></textarea>
+            </div>
+            <button type="submit" class="btn-primary" style="width:auto; padding:0.5rem 1rem; margin-top:0.6rem;">Añadir</button>
+        </form>
+
+        {% if techniques %}
+        <table class="admin-table">
+            <tr>
+                <th>#</th>
+                <th>Título</th>
+                <th>URL embed</th>
+                <th>Acciones</th>
+            </tr>
+            {% for tech in techniques %}
+            <tr>
+                <td>{{ tech.order }}</td>
+                <td>{{ tech.title }}</td>
+                <td style="font-size:0.75rem; max-width:280px; word-break:break-all;">{{ tech.youtube_url or '—' }}</td>
+                <td>
+                    <button type="button" class="btn-sm" style="background-color:#3f51b5; margin-right:6px;"
+                        onclick="toggleTechniqueEdit({{ tech.id }})">Editar</button>
+                    <a href="{{ url_for('admin.delete_technique', technique_id=tech.id) }}"
+                        class="btn-sm" style="background-color:red;"
+                        onclick="return confirm('¿Eliminar técnica {{ tech.title }}?')">Eliminar</a>
+                </td>
+            </tr>
+            <tr id="tech-edit-{{ tech.id }}" style="display:none; background:#f8f9ff;">
+                <td colspan="4" style="padding:0.8rem; border-top:none;">
+                    <form action="{{ url_for('admin.edit_technique', technique_id=tech.id) }}" method="post">
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <div style="min-width:180px; flex:1;">
+                                <label style="font-size:0.75rem; display:block;">Título</label>
+                                <input type="text" name="title" value="{{ tech.title }}" required
+                                    style="width:100%; padding:0.4rem; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                            </div>
+                            <div style="min-width:240px; flex:2;">
+                                <label style="font-size:0.75rem; display:block;">URL video</label>
+                                <input type="text" name="youtube_url" value="{{ tech.youtube_url or '' }}"
+                                    style="width:100%; padding:0.4rem; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                            </div>
+                        </div>
+                        <div style="margin-top:0.5rem;">
+                            <label style="font-size:0.75rem; display:block;">Descripción</label>
+                            <textarea name="description" rows="2"
+                                style="width:100%; padding:0.4rem; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">{{ tech.description or '' }}</textarea>
+                        </div>
+                        <div style="margin-top:0.5rem;">
+                            <button type="submit" class="btn-sm" style="background:#2e7d32;">Guardar</button>
+                            <button type="button" class="btn-sm" style="background:#6c757d;" onclick="toggleTechniqueEdit({{ tech.id }})">Cancelar</button>
+                        </div>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p style="color:#999;">No hay técnicas cargadas aún.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        function togglePriceEdit(id) {
+            const row = document.getElementById('price-edit-' + id);
+            row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+        }
+
+        function toggleTechniqueEdit(id) {
+            const row = document.getElementById('tech-edit-' + id);
+            row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+        }
+    </script>
+    {% endblock %}

@@ -1,0 +1,27 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Flask instance and local DB
+instance/
+*.db
+
+# Uploads and generated files
+uploads/
+
+# Tooling and OS
+.mypy_cache/
+.DS_Store
+.vscode/
+
+# Logs
+*.log
+
+# Alembic cache
+migrations/__pycache__/

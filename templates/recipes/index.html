@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header-section" style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 class="handwritten">Mis Recetas</h2>
+    <a href="{{ url_for('recipes.create') }}" class="btn-primary" style="width:auto; text-decoration:none;">+ Nueva
+        Receta</a>
+</div>
+
+{% if recipes %}
+
+{%- set counts = {} -%}
+{%- for r in recipes -%}
+    {%- set cat = r.category or 'Sin categoría' -%}
+    {%- if cat in counts -%}
+        {%- set _ = counts.update({cat: counts[cat] + 1}) -%}
+    {%- else -%}
+        {%- set _ = counts.update({cat: 1}) -%}
+    {%- endif -%}
+{%- endfor -%}
+
+<div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1.5rem; margin-bottom:1.5rem;">
+    <div style="background:white; border-radius:8px; padding:0.6rem 1rem; box-shadow:0 2px 5px rgba(0,0,0,0.07); font-size:0.85rem; color:#555;">
+        📋 <strong>{{ recipes|length }}</strong> recetas en total
+    </div>
+    {% for cat, cnt in counts.items() | sort %}
+    <div style="background:white; border-radius:8px; padding:0.6rem 1rem; box-shadow:0 2px 5px rgba(0,0,0,0.07); font-size:0.85rem; color:#555;">
+        {{ cat }}: <strong>{{ cnt }}</strong>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="recipe-grid"
+    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top:2rem;">
+    {% for recipe in recipes %}
+    <div class="recipe-card"
+        style="background:white; border-radius:8px; overflow:hidden; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+        {% if recipe.image_filename %}
+        <img src="{{ url_for('uploaded_file', filename=recipe.image_filename) }}" alt="{{ recipe.title }}"
+            style="width:100%; height:200px; object-fit:cover;">
+        {% else %}
+        <div
+            style="width:100%; height:200px; background:#e0e0e0; display:flex; align-items:center; justify-content:center; color:#999;">
+            Sin imagen</div>
+        {% endif %}
+        <div style="padding: 1.5rem;">
+            <h3 class="handwritten" style="margin:0 0 0.5rem 0; font-size:1.8rem; color:var(--text-color);">{{
+                recipe.title }}</h3>
+            <p style="font-size:0.9rem; color:#666; margin-bottom:1rem;">
+                {{ recipe.category }} | {{ recipe.menu_type }}
+            </p>
+            <p style="color:var(--text-color);">
+                <span title="Dificultad">{% for _ in range(recipe.difficulty or 0) %}⭐{% endfor %}</span>
+                &nbsp;|&nbsp;
+                <span title="Tiempo">⏱️ {{ recipe.prep_time_minutes or '?' }} min</span>
+            </p>
+            <p style="font-size:0.85rem; color:#555; margin-bottom:0.5rem;">
+                <span title="Costo estimado (ingresado)">💰 Estimado:&nbsp;
+                    {% if recipe.cost %}<strong>${{ "{:,}".format(recipe.cost)|replace(",",".") }}</strong>{% else %}<span style="color:#bbb;">—</span>{% endif %}
+                </span>
+                &nbsp;&nbsp;
+                <span title="Costo calculado por ingredientes">🧮 Calculado:&nbsp;
+                    {% set calc = calculated_costs.get(recipe.id) %}
+                    {% if calc %}<strong>${{ "{:,}".format(calc)|replace(",",".") }}</strong>{% else %}<span style="color:#bbb;">—</span>{% endif %}
+                </span>
+            </p>
+            <div style="margin-top: 1rem; font-size: 0.85rem; color: #888;">
+                Estado:
+                {% if recipe.is_approved %}
+                <span style="color:green; font-weight:bold;">Publicada</span>
+                {% else %}
+                <span style="color:orange; font-weight:bold;">En Revisión</span>
+                {% endif %}
+            </div>
+            <div style="margin-top:1rem;">
+                <a href="{{ url_for('recipes.detail', recipe_id=recipe.id) }}" class="btn-secondary"
+                    style="text-decoration:none; display:inline-block;">Ver Detalle</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center; padding: 4rem 1rem; background:white; border-radius:8px; margin-top:2rem;">
+    <h3 class="handwritten" style="color:#999; font-size:2rem;">Aún no has agregado ninguna receta.</h3>
+    <p>¡Anímate a compartir tus secretos culinarios!</p>
+    <a href="{{ url_for('recipes.create') }}" class="btn-primary"
+        style="display:inline-block; margin-top:1rem; text-decoration:none; width:auto;">Haz click aquí para empezar</a>
+</div>
+{% endif %}
+{% endblock %}

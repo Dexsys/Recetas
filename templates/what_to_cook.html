@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero">
+    <h2 class="handwritten" style="font-size: 3rem;">¿Qué puedo cocinar?</h2>
+    <p>Dinos qué ingredientes tienes en tu despensa o refrigerador, y te diremos qué preparar.</p>
+
+    <div
+        style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; margin: 2rem auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <form action="{{ url_for('main.suggest') }}" method="post">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Ingresa tus ingredientes (separados
+                por coma):</label>
+            <textarea name="ingredients" rows="4" placeholder="Ej: tomate, cebolla, harina, huevos" required
+                style="width: 100%; padding: 0.8rem; border-radius: 4px; border: 1px solid #ccc; font-family: 'Inter', sans-serif; resize: vertical;">{{ provided_ings }}</textarea>
+            <button type="submit" class="btn-primary" style="margin-top: 1rem;">Buscar Recetas Posibles</button>
+        </form>
+    </div>
+</div>
+
+{% if request.method == 'POST' %}
+<h3 class="handwritten" style="text-align: center; font-size: 2.2rem; margin-top: 2rem;">Resultados Encontrados</h3>
+
+{% if recipes %}
+<div class="recipe-grid"
+    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+    {% for recipe in recipes %}
+    <a href="{{ url_for('recipes.detail', recipe_id=recipe.id) }}" style="text-decoration: none; color: inherit;">
+        <div class="recipe-card"
+            style="background:white; border-radius:8px; overflow:hidden; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition: transform 0.3s;"
+            onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+            {% if recipe.image_filename %}
+            <img src="{{ url_for('uploaded_file', filename=recipe.image_filename) }}" alt="{{ recipe.title }}"
+                style="width:100%; height:200px; object-fit:cover;">
+            {% else %}
+            <div
+                style="width:100%; height:200px; background:#e0e0e0; display:flex; align-items:center; justify-content:center; color:#999;">
+                Sin imagen</div>
+            {% endif %}
+            <div style="padding: 1.5rem;">
+                <h3 class="handwritten" style="margin:0 0 0.5rem 0; font-size:1.8rem; color:var(--text-color);">{{
+                    recipe.title }}</h3>
+                <p style="font-size:0.9rem; color:#666; margin-bottom:1rem;">
+                    {{ recipe.category }} | {{ recipe.menu_type }}
+                </p>
+                <p style="color:var(--text-color);">
+                    <span title="Dificultad">{% for _ in range(recipe.difficulty or 0) %}⭐{% endfor %}</span>
+                    &nbsp;|&nbsp;
+                    <span title="Costo">{% for _ in range(recipe.cost or 0) %}💸{% endfor %}</span>
+                    &nbsp;|&nbsp;
+                    <span title="Tiempo">⏱️ {{ recipe.prep_time_minutes or '?' }} min</span>
+                </p>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align: center; padding: 2rem;">
+    <p style="color: #666; font-size: 1.2rem;">No encontramos recetas que coincidan con esos ingredientes.</p>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

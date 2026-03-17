@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="recipe-story recipe-theme-{{ recipe_theme.slug }}">
+<div class="recipe-detail-container cookbook-sheet">
+
+    <div class="recipe-hero-panel">
+        <div class="recipe-hero-copy">
+            <span class="recipe-theme-kicker">{{ recipe_theme.label }}</span>
+            <h1 class="handwritten recipe-title-main">{{ recipe.title }}</h1>
+            <p class="recipe-byline">
+                Por: {{ recipe.original_author if recipe.original_author else recipe.author.username }}
+                {% if recipe.url_reference %}
+                <span class="recipe-inline-divider">|</span>
+                <a href="{{ recipe.url_reference }}" target="_blank" rel="noopener">Ver Fuente Original</a>
+                {% endif %}
+            </p>
+            <p class="recipe-upload-meta">
+                Subida por: <strong>{{ recipe.author.username }}</strong>
+                <span class="recipe-inline-divider">·</span>
+                Publicada el {{ recipe.created_at.strftime('%d/%m/%Y') }}
+                {% if recipe.updated_at and recipe.updated_at != recipe.created_at %}
+                <span class="recipe-inline-divider">·</span>
+                Última edición: {{ recipe.updated_at.strftime('%d/%m/%Y') }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    {% if all_images %}
+    {% if all_images|length == 1 %}
+    <img class="recipe-hero-image" src="{{ url_for('uploaded_file', filename=all_images[0]) }}"
+        style="width: 100%; max-height: 400px; object-fit: cover;">
+    {% else %}
+    <div id="recipe-carousel" class="recipe-carousel" style="position:relative; background:#000; max-height:400px; overflow:hidden; line-height:0;">
+        <div id="carousel-track" style="display:flex; transition:transform 0.4s ease;">
+            {% for img_fn in all_images %}
+            <img class="recipe-hero-image" src="{{ url_for('uploaded_file', filename=img_fn) }}"
+                style="min-width:100%; max-height:400px; object-fit:cover; flex-shrink:0;">
+            {% endfor %}
+        </div>
+        <button onclick="carouselPrev()" aria-label="Anterior" class="carousel-arrow"
+            style="position:absolute; left:12px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.5); color:white; border:none; border-radius:50%; width:44px; height:44px; font-size:1.6rem; cursor:pointer; line-height:1;">&#8249;</button>
+        <button onclick="carouselNext()" aria-label="Siguiente" class="carousel-arrow"
+            style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.5); color:white; border:none; border-radius:50%; width:44px; height:44px; font-size:1.6rem; cursor:pointer; line-height:1;">&#8250;</button>
+        <div id="carousel-dots" style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%); display:flex; gap:8px; padding:4px;">
+            {% for img_fn in all_images %}
+            <span onclick="carouselGo({{ loop.index0 }})"
+                style="width:10px; height:10px; border-radius:50%; background:{% if loop.first %}white{% else %}rgba(255,255,255,0.45){% endif %}; cursor:pointer; transition:background 0.2s; display:inline-block; box-shadow:0 0 3px rgba(0,0,0,0.5);"></span>
+            {% endfor %}
+        </div>
+    </div>
+    <script>
+    (function() {
+        var idx = 0;
+        var total = {{ all_images|length }};
+        function go(n) {
+            idx = ((n % total) + total) % total;
+            document.getElementById('carousel-track').style.transform = 'translateX(' + (-100 * idx) + '%)';
+            document.querySelectorAll('#carousel-dots span').forEach(function(d, i) {
+                d.style.background = i === idx ? 'white' : 'rgba(255,255,255,0.45)';
+            });
+        }
+        window.carouselGo = go;
+        window.carouselPrev = function() { go(idx - 1); };
+        window.carouselNext = function() { go(idx + 1); };
+    })();
+    </script>
+    {% endif %}
+    {% endif %}
+
+    <div class="recipe-content-shell" style="padding: 2rem;">
+        <div class="recipe-action-row">
+            {% if current_user.is_authenticated and (current_user.id == recipe.user_id or current_user.role == 'admin') %}
+            <a href="{{ url_for('recipes.edit', recipe_id=recipe.id) }}" class="btn-primary recipe-action-btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center; width: 160px; height: 42px; box-sizing: border-box; margin:0; padding:0;">✏️ Editar</a>
+            <form action="{{ url_for('recipes.delete', recipe_id=recipe.id) }}" method="post" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta receta permanentemente?');" style="margin:0; padding:0; background:none; box-shadow:none; display:flex;">
+                <button type="submit" class="btn-secondary recipe-action-btn recipe-delete-btn" style="background-color: #d32f2f; margin:0; padding:0; width: 160px; height: 42px; box-sizing: border-box; display:flex; align-items:center; justify-content:center;">🗑️ Eliminar</button>
+            </form>
+            {% endif %}
+            <button onclick="printMiniaturas()" class="btn-secondary recipe-action-btn" style="margin:0; padding:0; width: 160px; height: 42px; box-sizing: border-box; display:flex; align-items:center; justify-content:center;">🖨️ Miniaturas</button>
+            <button onclick="printPortada()" class="btn-secondary recipe-action-btn" style="margin:0; padding:0; width: 180px; height: 42px; box-sizing: border-box; display:flex; align-items:center; justify-content:center;">🖼️ Portada + Mini</button>
+        </div>
+
+        <script>
+        (function() {
+            function printWithMode(mode) {
+                document.body.classList.remove('print-cover-mode');
+                if (mode === 'cover') {
+                    document.body.classList.add('print-cover-mode');
+                }
+                window.print();
+            }
+
+            window.printMiniaturas = function() {
+                printWithMode('mini');
+            };
+
+            window.printPortada = function() {
+                printWithMode('cover');
+            };
+
+            window.addEventListener('afterprint', function() {
+                document.body.classList.remove('print-cover-mode');
+            });
+        })();
+        </script>
+
+        <div class="recipe-meta recipe-meta-grid"
+            style="display: flex; justify-content: space-around; background: var(--bg-color); padding: 1rem; border-radius: 8px; margin: 2rem 0; flex-wrap: wrap; gap: 1rem;">
+            <div style="text-align: center;">
+                <span style="display: block; font-size: 1.5rem;">⏱️</span>
+                <strong>Tiempo</strong><br>
+                {{ recipe.prep_time_minutes or '?' }} min
+            </div>
+            <div style="text-align: center;">
+                <span style="display: block; font-size: 1.5rem;">🍽️</span>
+                <strong>Porciones</strong><br>
+                {{ recipe.portions or 'N/A' }}
+            </div>
+            <div style="text-align: center;">
+                <span style="display: block; font-size: 1.5rem;">⭐</span>
+                <strong>Dificultad</strong><br>
+                <span style="color:var(--accent-color);">{% for _ in range(recipe.difficulty or 0) %}⭐{% endfor
+                    %}</span>
+            </div>
+            <div style="text-align: center;">
+                <span style="display: block; font-size: 1.5rem;">💸</span>
+                <strong>Costo (CLP)</strong><br>
+                {% if recipe.cost %}
+                <span style="color:var(--accent-color); font-weight: bold;">${{ "{:,.0f}".format(recipe.cost).replace(',', '.') }}</span>
+                {% if recipe.cost_usd %}
+                <br><span style="font-size: 0.8rem; color:#888;">(USD ${{ "{:,.2f}".format(recipe.cost_usd) }})</span>
+                {% endif %}
+                {% else %}
+                <span style="color:var(--accent-color);">N/A</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="recipe-columns" style="display: flex; flex-wrap: wrap; gap: 2rem;">
+            <!-- Ingredientes -->
+            <div class="recipe-panel recipe-panel-ingredients" style="flex: 1; min-width: 250px;">
+                <div class="infografia-area print-hide" style="margin-bottom: 1rem; text-align: center;">
+                    <img src="{{ url_for('static', filename='img/infografia_ingredientes.jpg') }}" alt="Área de Ingredientes" style="width: 100%; border-radius: 8px; max-height: 250px; object-fit: cover;" onerror="this.style.display='none'">
+                </div>
+                <h2 class="handwritten"
+                    style="color: var(--header-bg); border-bottom: 2px dashed #ccc; padding-bottom: 0.5rem; font-size: 2rem;">
+                    Ingredientes</h2>
+                <ul style="list-style: none; padding: 0; font-family: 'Patrick Hand', cursive; font-size: 1.3rem;">
+                    {% for ing in recipe.ingredients %}
+                    <li
+                        style="padding: 0.5rem 0; border-bottom: 1px dashed rgba(0,0,0,0.1); display: flex; justify-content: space-between;">
+                        <span>
+                            {% if ing.amount %}{{ "%.2f"|format(ing.amount)|replace('.00', '') }}{% endif %}
+                            {{ ing.unit }}
+                        </span>
+                        <strong>{{ ing.name }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Preparación -->
+            <div class="recipe-panel recipe-panel-method" style="flex: 2; min-width: 300px;">
+                <div class="infografia-area print-hide" style="margin-bottom: 1rem; text-align: center;">
+                    <img src="{{ url_for('static', filename='img/infografia_preparacion.jpg') }}" alt="Área de Preparación" style="width: 100%; border-radius: 8px; max-height: 250px; object-fit: cover;" onerror="this.style.display='none'">
+                </div>
+                <h2 class="handwritten"
+                    style="color: var(--header-bg); border-bottom: 2px dashed #ccc; padding-bottom: 0.5rem; font-size: 2rem;">
+                    Preparación</h2>
+                <div
+                    style="text-align: left; white-space: pre-wrap; font-family: 'Patrick Hand', cursive; font-size: 1.4rem; line-height: 1.6; color: var(--text-color);">
+                    {{ recipe.instructions }}</div>
+            </div>
+        </div>
+
+        <!-- Valorización de Ingredientes -->
+        <div class="recipe-valuation-block" style="margin-top: 2rem; padding: 1.5rem; background: #f0faf0; border-radius: 8px; border: 1px dashed #a5d6a7;">
+            <h3 class="handwritten" style="margin-top:0; color: #2e7d32; font-size:1.8rem;">💰 Valorización de Ingredientes</h3>
+            {% if not has_any_price %}
+            <p style="color:#999; font-size:0.9rem;">
+                Aún no hay precios cargados.
+                {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                <a href="{{ url_for('admin.dashboard') }}#precios-ingredientes" style="color:var(--accent-color); font-weight:bold;">Configurar precios →</a>
+                {% endif %}
+            </p>
+            {% else %}
+            <table style="width:100%; border-collapse:collapse; font-family:'Patrick Hand',cursive; font-size:1.05rem;">
+                <thead>
+                    <tr style="border-bottom:2px solid #a5d6a7; text-align:left; color:#2e7d32;">
+                        <th style="padding:0.4rem 0.5rem;">Ingrediente</th>
+                        <th style="padding:0.4rem 0.5rem; text-align:right;">Cantidad</th>
+                        <th style="padding:0.4rem 0.5rem; text-align:right;">Equiv.</th>
+                        <th style="padding:0.4rem 0.5rem; text-align:right;">Precio ref.</th>
+                        <th style="padding:0.4rem 0.5rem; text-align:right;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in cost_breakdown %}
+                <tr style="border-bottom:1px dashed rgba(0,0,0,0.08);">
+                    <td style="padding:0.35rem 0.5rem;">{{ row.ing.name }}</td>
+                    <td style="padding:0.35rem 0.5rem; text-align:right;">
+                        {% if row.ing.amount %}{{ "%.2f"|format(row.ing.amount)|replace('.00', '') }}{% endif %}
+                        {{ row.ing.unit }}
+                    </td>
+                    <td style="padding:0.35rem 0.5rem; text-align:right; color:#555;">
+                        {% if row.qty_display is not none %}
+                            {{ "%.1f"|format(row.qty_display) if row.qty_unit != 'ud.' else (row.qty_display|int if row.qty_display == row.qty_display|int else row.qty_display) }} {{ row.qty_unit }}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td style="padding:0.35rem 0.5rem; text-align:right; color:#555; font-size:0.9rem;">
+                        {% if row.price_entry %}
+                        <span title="{% if row.price_entry.url_reference %}Fuente: {{ row.price_entry.url_reference }}{% endif %}">
+                            ${{ "{:,.0f}".format(row.price_entry.price).replace(',', '.') }}
+                            / {{ row.price_entry.commercial_qty|int if row.price_entry.commercial_qty == row.price_entry.commercial_qty|int else row.price_entry.commercial_qty }}
+                            {{ row.price_entry.commercial_unit }}
+                            {% if row.price_entry.url_reference %}<a href="{{ row.price_entry.url_reference }}" target="_blank" rel="noopener" style="font-size:0.75rem; color:var(--accent-color);">&#8599;</a>{% endif %}
+                        </span>
+                        {% else %}<span style="color:#bbb;">Sin precio</span>{% endif %}
+                    </td>
+                    <td style="padding:0.35rem 0.5rem; text-align:right; font-weight:bold; color:{% if row.line_cost %}#2e7d32{% else %}#bbb{% endif %};">
+                        {% if row.line_cost is not none %}${{ "{:,.0f}".format(row.line_cost).replace(',', '.') }}{% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+                {% if total_estimated_cost > 0 %}
+                <tfoot>
+                    <tr style="border-top:2px solid #a5d6a7; background:#e8f5e9;">
+                        <td colspan="4" style="padding:0.5rem 0.5rem; font-weight:bold; color:#1b5e20;">Total estimado (ingredientes con precio)</td>
+                        <td style="padding:0.5rem 0.5rem; text-align:right; font-weight:bold; font-size:1.2rem; color:#1b5e20;">${{ "{:,.0f}".format(total_estimated_cost).replace(',', '.') }}</td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+            <p style="font-size:0.77rem; color:#999; margin-top:0.5rem;">* Estimación basada en precios comerciales ingresados. Conversiones: cda(s)=15gr, cdita(s)=5gr, taza(s)=240gr. Los ingredientes sin precio asignado no se incluyen.</p>
+            {% endif %}
+        </div>
+
+        <!-- Timer -->
+        <div class="timer-section print-hide"
+            style="margin-top: 2rem; padding: 1rem; background: #fff3e0; border-radius: 8px; text-align: center; border: 1px dashed #ffcc80;">
+            <h3 class="handwritten" style="margin-top:0; color: #e65100; font-size:1.8rem;">⏳ Temporizador de Ayuda</h3>
+            <p style="font-size:0.9rem; color:#666; margin-bottom:1rem;">Úsalo para controlar tus tiempos de cocción u
+                horneado.</p>
+            <div style="display:flex; justify-content:center; gap: 10px; align-items:center;">
+                <input type="number" id="timer-minutes" value="{{ recipe.prep_time_minutes or 10 }}"
+                    style="width: 80px; padding: 0.5rem; text-align: center; font-size: 1.2rem; border-radius:4px; border:1px solid #ccc;">
+                min
+                <button onclick="startTimer()" class="btn-primary" style="width: auto; padding: 0.5rem 1rem;">▶
+                    Iniciar</button>
+                <button onclick="stopTimer()" class="btn-secondary" style="width: auto; padding: 0.5rem 1rem;">⏹
+                    Detener</button>
+            </div>
+            <div id="timer-display"
+                style="font-size: 4rem; font-weight: bold; font-family: monospace; color: var(--text-color); margin-top: 1rem;">
+                00:00</div>
+        </div>
+
+        <!-- Comments -->
+        <div class="comment-section print-hide" style="margin-top: 3rem; border-top: 1px solid #eee; padding-top: 2rem;">
+            <h3 class="handwritten" style="font-size: 2rem;">Comentarios de la Comunidad</h3>
+
+            {% for comment in recipe.comments %}
+            {% if comment.is_approved or (current_user.is_authenticated and current_user.id == comment.user_id) %}
+            <div style="background: var(--bg-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <strong style="color: var(--accent-color);">{{ comment.author.username }}</strong>
+                <span style="color: #999; font-size: 0.8rem; margin-left: 10px;">{{
+                    comment.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                {% if not comment.is_approved %}
+                <span style="color: orange; font-size: 0.8rem; font-weight: bold; margin-left:10px;">(Pendiente de
+                    Aprobación)</span>
+                {% endif %}
+                <p style="margin: 0.5rem 0 0 0; line-height: 1.4;">{{ comment.text }}</p>
+            </div>
+            {% endif %}
+            {% else %}
+            <p>No hay comentarios aún. ¡Sé el primero en opinar sobre esta delicia!</p>
+            {% endfor %}
+
+            {% if current_user.is_authenticated %}
+            <form action="{{ url_for('recipes.comment', recipe_id=recipe.id) }}" method="post"
+                style="margin-top: 2rem; background: #f9f9f9; padding: 1.5rem; border-radius:8px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 0.5rem;">Añade tu comentario:</label>
+                <textarea name="text" rows="3" required
+                    style="width: 100%; padding: 0.8rem; border-radius: 4px; border: 1px solid #ccc; font-family: 'Inter', sans-serif; resize: vertical; margin-bottom: 1rem;"></textarea>
+                <button type="submit" class="btn-primary" style="width: auto;">Enviar Comentario</button>
+            </form>
+            {% else %}
+            <p style="margin-top: 2rem; padding: 1rem; background: #f9f9f9; border-radius:8px; text-align:center;">
+                <a href="{{ url_for('auth.login', next=request.path) }}"
+                    style="font-weight:bold; color:var(--accent-color);">Inicia sesión</a> para dejar un comentario.
+            </p>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let timerInterval;
+    function startTimer() {
+        clearInterval(timerInterval);
+        const minInput = document.getElementById('timer-minutes').value;
+        let timeInSeconds = parseInt(minInput) * 60;
+        const display = document.getElementById('timer-display');
+
+        if (isNaN(timeInSeconds) || timeInSeconds <= 0) return;
+
+        display.innerText = `${Math.floor(timeInSeconds / 60).toString().padStart(2, '0')}:${(timeInSeconds % 60).toString().padStart(2, '0')}`;
+
+        timerInterval = setInterval(() => {
+            timeInSeconds--;
+            const min = Math.floor(timeInSeconds / 60);
+            const sec = timeInSeconds % 60;
+            display.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+
+            if (timeInSeconds <= 0) {
+                clearInterval(timerInterval);
+                display.style.color = 'red';
+                alert("¡Ring ring! El tiempo en la cocina ha terminado.");
+            } else {
+                display.style.color = 'var(--text-color)';
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+    }
+</script>
+</div>
+{% endblock %}
