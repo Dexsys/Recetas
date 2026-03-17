@@ -25,6 +25,8 @@ REMOTE   = "/home/ubuntu/Developer/Flask/Recetas"
 DEFAULT_SERVICE = "recetas"
 DEFAULT_REMOTE_PYTHON = "python3"
 DEFAULT_REMOTE_VENV = ".venv"
+DEFAULT_NGINX_CONF = "nginx_recetas.conf"
+DEFAULT_NGINX_SITE = "recetas"
 LOCAL    = Path(__file__).parent
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -201,6 +203,8 @@ def main():
     service = os.environ.get("DEPLOY_SERVICE_NAME", DEFAULT_SERVICE)
     remote_python = os.environ.get("DEPLOY_PYTHON", DEFAULT_REMOTE_PYTHON)
     remote_venv = os.environ.get("DEPLOY_REMOTE_VENV", DEFAULT_REMOTE_VENV)
+    nginx_conf = os.environ.get("DEPLOY_NGINX_CONF", DEFAULT_NGINX_CONF)
+    nginx_site = os.environ.get("DEPLOY_NGINX_SITE", DEFAULT_NGINX_SITE)
 
     if not password:
         print("[ERROR] Falta la variable de entorno DEPLOY_SSH_PASSWORD")
@@ -327,6 +331,37 @@ def main():
     if run_sudo(f"systemctl enable {service}") != 0:
         print(f"  [WARN] No se pudo habilitar el servicio {service} en el arranque.")
     print("  [OK] Servicio systemd instalado/actualizado\n")
+
+    # Instalar configuracion de Nginx en sitios disponibles/habilitados.
+    print("[3.3/4] Instalando configuracion Nginx...")
+    if run("command -v nginx >/dev/null 2>&1") != 0:
+        print("  [WARN] Nginx no está instalado en el servidor. Omitiendo configuración web.")
+    else:
+        remote_nginx_source = f"{REMOTE}/{nginx_conf}"
+        if run(f"test -f {shlex.quote(remote_nginx_source)}") != 0:
+            print(f"  [ERROR] No se encontró el archivo de configuración Nginx: {remote_nginx_source}")
+            sys.exit(1)
+
+        target_available = f"/etc/nginx/sites-available/{nginx_site}"
+        target_enabled = f"/etc/nginx/sites-enabled/{nginx_site}"
+
+        if run_sudo(f"cp {shlex.quote(remote_nginx_source)} {shlex.quote(target_available)}") != 0:
+            print("  [ERROR] Fallo copiando configuración de Nginx a sites-available.")
+            sys.exit(1)
+
+        if run_sudo(f"ln -sfn {shlex.quote(target_available)} {shlex.quote(target_enabled)}") != 0:
+            print("  [ERROR] Fallo habilitando sitio de Nginx.")
+            sys.exit(1)
+
+        if run_sudo("nginx -t") != 0:
+            print("  [ERROR] La validación de configuración Nginx falló.")
+            sys.exit(1)
+
+        if run_sudo("systemctl reload nginx") != 0:
+            print("  [ERROR] Fallo al recargar Nginx.")
+            sys.exit(1)
+
+        print(f"  [OK] Nginx configurado y recargado con sitio '{nginx_site}'\n")
 
     # ── 4. Reiniciar servicio ────────────────────────────────────────────────
     print("[4/4] Reiniciando servicio en el servidor...")
