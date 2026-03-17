@@ -17,10 +17,14 @@
 ### Tecnico
 - Recreacion del entorno virtual local para asegurar instalacion limpia.
 - Estandarizacion de uso del entorno .venv en comandos operativos.
+- Refactor de deploy_to_server.py para copiar solo archivos versionados en Git.
+- Migraciones de base de datos ejecutadas en servidor remoto durante deploy.
 
 ### Modificado
 - README.md actualizado con instrucciones de instalacion y ejecucion reales.
 - historial.md actualizado con cambios operativos del dia.
+- Deploy endurecido para productivo (validaciones, servicio configurable, limpieza de items).
+- Nuevo script backup_to_github.py para respaldo con actualizacion previa de documentacion.
 
 ### Migracion de Base de Datos
 - Sin cambios de esquema.
@@ -29,7 +33,10 @@
 - Sin cambios.
 
 ### Infraestructura
+- Respaldo a GitHub ejecutado mediante backup_to_github.py.
+- Deploy a produccion ejecutado mediante deploy_to_server.py.
 - Sin cambios de despliegue o servidor.
+- Regla operativa: antes de deploy o respaldo GitHub se actualizan historial.md y README.md.
 
 ---
 

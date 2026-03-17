@@ -1,4 +1,4 @@
-# Sistema de Gestion de Recetas Familiares
+# Sistema de Gestión de Recetas Familiares
 
 Proyecto web en Flask para administrar recetas, usuarios, tecnicas y comentarios.
 
@@ -14,7 +14,7 @@ Proyecto web en Flask para administrar recetas, usuarios, tecnicas y comentarios
 - pip actualizado
 - Dependencias en requirements.txt
 
-## Instalacion
+## Instalación
 
 ### Windows (PowerShell)
 
@@ -50,7 +50,7 @@ Con el entorno activo:
 
 python app.py
 
-La aplicacion queda disponible en:
+La aplicación queda disponible en:
 
 - http://127.0.0.1:5080
 
@@ -100,6 +100,14 @@ Con el entorno activo:
 - Listar backups:
 
   python backup_db.py listar
+
+- Respaldo a GitHub (actualiza historial/readme antes de push):
+
+   python backup_to_github.py
+
+- Deploy a servidor (actualiza historial/readme antes de desplegar):
+
+   python deploy_to_server.py
 
 ## Notas operativas
 
