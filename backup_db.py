@@ -162,5 +162,5 @@ if __name__ == '__main__':
         print("\n  Restaurar backup:")
         print("    python backup_db.py restaurar <nombre_archivo>")
         print("\nEjemplo:")
-        print("    python backup_db.py restaurar licencias_backup_2025-10-29_14-30-45.db")
+        print("    python backup_db.py restaurar recetas_backup_2025-10-29_14-30-45.db")
         print("\n" + "=" * 60)

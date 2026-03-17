@@ -67,7 +67,7 @@ def load_env_file(env_path):
         if (value.startswith("\"") and value.endswith("\"")) or (value.startswith("'") and value.endswith("'")):
             value = value[1:-1]
 
-        os.environ.setdefault(key, value)
+        os.environ[key] = value
 
 
 def update_readme(version, date_iso):
@@ -332,6 +332,9 @@ def main():
     print("[4/4] Reiniciando servicio en el servidor...")
     if run_sudo(f"systemctl restart {service}") != 0:
         print(f"  [ERROR] No se pudo reiniciar {service}.service")
+        print("  [INFO] Diagnostico rapido del servicio:")
+        run_sudo(f"systemctl status {service}.service --no-pager -l")
+        run_sudo(f"journalctl -xeu {service}.service -n 80 --no-pager")
         sys.exit(1)
     time.sleep(2)
     _, stdout, _ = ssh.exec_command(f"systemctl is-active {service}")

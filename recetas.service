@@ -3,7 +3,7 @@ Description=Sistema de Gestión Recetas Familiares
 After=network.target
 
 [Service]
-Type=notify
+Type=simple
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/home/ubuntu/Developer/Flask/Recetas
