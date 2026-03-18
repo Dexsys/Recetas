@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required
 from extensions import db
-from models import User, Recipe, Comment, Category, MenuType, Unit, IngredientPrice, Technique
+from models import User, Recipe, Comment, Category, MenuType, Unit, Ingredient, IngredientPrice, Technique
 from decorators import admin_required
 import re
+import unicodedata
 
 bp = Blueprint('admin', __name__)
 
@@ -35,6 +36,33 @@ def legacy_price_per_kg(price_val, qty_val, unit):
     if unit in ['kg', 'l', 'unidades']:
         return price_val / qty_val
     return price_val
+
+
+def normalize_ingredient_name(value):
+    """Normalize ingredient names for accent/case-insensitive comparisons."""
+    if not value:
+        return ''
+    text = ' '.join(value.strip().split())
+    text = unicodedata.normalize('NFKD', text)
+    text = ''.join(ch for ch in text if not unicodedata.combining(ch))
+    return text.casefold()
+
+
+def rename_ingredient_references(old_name, new_name):
+    """Rename ingredient names in recipe lines using normalized matching."""
+    if not old_name or not new_name:
+        return 0
+
+    old_norm = normalize_ingredient_name(old_name)
+    if not old_norm:
+        return 0
+
+    renamed = 0
+    for ing in Ingredient.query.all():
+        if normalize_ingredient_name(ing.name) == old_norm and ing.name != new_name:
+            ing.name = new_name
+            renamed += 1
+    return renamed
 
 @bp.route('/')
 @login_required
@@ -176,11 +204,13 @@ def add_ingredient_price():
 @admin_required
 def edit_ingredient_price(price_id):
     entry = IngredientPrice.query.get_or_404(price_id)
+    old_name = entry.name
     name = request.form.get('name', entry.name).strip()
     price_str = request.form.get('price', str(entry.price)).strip()
     qty_str = request.form.get('commercial_qty', str(entry.commercial_qty)).strip()
     c_unit = request.form.get('commercial_unit', entry.commercial_unit).strip()
     url_ref = request.form.get('url_reference', '').strip() or None
+    propagate_name = request.form.get('propagate_name') == '1'
 
     try:
         price_val = float(price_str)
@@ -193,8 +223,16 @@ def edit_ingredient_price(price_id):
         entry.commercial_unit = c_unit
         entry.url_reference = url_ref
         entry.price_per_kg = legacy_price_per_kg(price_val, qty_val, c_unit)
+
+        renamed_count = 0
+        if propagate_name and old_name != name:
+            renamed_count = rename_ingredient_references(old_name, name)
+
         db.session.commit()
-        flash(f'Precio de "{entry.name}" actualizado.', 'success')
+        if renamed_count > 0:
+            flash(f'Precio de "{entry.name}" actualizado. Se renombraron {renamed_count} referencia(s) en recetas.', 'success')
+        else:
+            flash(f'Precio de "{entry.name}" actualizado.', 'success')
     except Exception:
         db.session.rollback()
         flash('No se pudo actualizar: revisa si ya existe otro ingrediente con ese nombre.', 'error')

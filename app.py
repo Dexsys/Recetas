@@ -96,7 +96,8 @@ def create_app(config_class=Config):
         stats = SiteStats.query.get(1)
         return {
             'site_total_visits': stats.total_visits if stats else 0,
-            'app_version': get_app_version()
+            'app_version': get_app_version(),
+            'is_development': app.debug
         }
 
     with app.app_context():

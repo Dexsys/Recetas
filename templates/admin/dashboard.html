@@ -277,6 +277,10 @@
                             <input type="url" name="url_reference" value="{{ ip.url_reference or '' }}"
                                 style="padding:0.4rem; border:1px solid #ccc; border-radius:4px; width:100%; box-sizing:border-box;">
                         </div>
+                        <div style="display:flex; align-items:center; gap:0.35rem; padding-bottom:0.3rem;">
+                            <input type="checkbox" id="propagate-{{ ip.id }}" name="propagate_name" value="1" checked>
+                            <label for="propagate-{{ ip.id }}" style="font-size:0.8rem; color:#333;">Aplicar nombre en recetas</label>
+                        </div>
                         <button type="submit" class="btn-sm" style="background:#2e7d32;">Guardar</button>
                         <button type="button" class="btn-sm" style="background:#6c757d;" onclick="togglePriceEdit({{ ip.id }})">Cancelar</button>
                     </form>
