@@ -4,8 +4,8 @@ Proyecto web en Flask para administrar recetas, usuarios, tecnicas y comentarios
 
 ## Estado
 
-- Version: 1.2026.0317
-- Ultima actualizacion: 2026-03-17
+- Version: 1.2026.0318
+- Ultima actualizacion: 2026-03-18
 - Entorno recomendado: .venv
 
 ## Requisitos
@@ -107,7 +107,7 @@ Con el entorno activo:
 
    python backup_to_github.py
 
-- Deploy a servidor (actualiza historial/readme antes de desplegar):
+- Deploy a servidor (actualiza historial/TODO/README y valida requirements cuando aplica):
 
    python deploy_to_server.py
 
@@ -115,6 +115,8 @@ Con el entorno activo:
 
 - Si existen tanto venv como .venv, usar solo .venv para evitar confusiones.
 - Si cambias dependencias, volver a generar requirements.txt.
+- Antes de desplegar, el script actualiza automaticamente historial.md, TODO.md y README.md.
+- Si detecta cambios Python/migraciones sin cambios en requirements.txt, pedira confirmacion para continuar.
 - Puerto de runtime de la app/Gunicorn: 5110.
 - El deploy instala/actualiza `recetas.service` en systemd automaticamente.
 - El deploy instala/activa configuracion Nginx automaticamente si Nginx está instalado en el servidor.

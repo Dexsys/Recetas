@@ -47,6 +47,7 @@ class Recipe(db.Model):
     cost_usd = db.Column(db.Float)
     instructions = db.Column(db.Text)
     image_filename = db.Column(db.String(140))
+    views = db.Column(db.Integer, nullable=False, default=0)
     is_approved = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, index=True, default=lambda: datetime.now(timezone.utc))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -104,3 +105,20 @@ class RecipeImage(db.Model):
     filename = db.Column(db.String(200), nullable=False)
     order = db.Column(db.Integer, default=0)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'))
+
+
+class SiteStats(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    total_visits = db.Column(db.Integer, nullable=False, default=0)
+
+    @classmethod
+    def increment_total_visits(cls):
+        stats = cls.query.get(1)
+        if not stats:
+            stats = cls(id=1, total_visits=0)
+            db.session.add(stats)
+            db.session.flush()
+
+        stats.total_visits = (stats.total_visits or 0) + 1
+        db.session.commit()
+        return stats.total_visits

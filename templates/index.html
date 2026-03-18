@@ -48,7 +48,7 @@
                     {{ recipe.category }} | {{ recipe.menu_type }}
                 </p>
                 <p style="color:var(--text-color);">
-                    <span title="Dificultad">{% for _ in range(recipe.difficulty or 0) %}⭐{% endfor %}</span>
+                    <span title="Dificultad">{% for _ in range(recipe.difficulty or 0) %}🥄{% endfor %}</span>
                     &nbsp;|&nbsp;
                     {% set est = estimated_costs.get(recipe.id) %}
                     <span title="Valor total estimado">Valor total estimado: {% if est %}${{ "{:,.0f}".format(est).replace(',', '.') }}{% else %}-{% endif %}</span>

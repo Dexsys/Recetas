@@ -1,9 +1,23 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from config import Config
 from sqlalchemy import inspect as sqlalchemy_inspect
 from extensions import db, login_manager, migrate
 
+
+def get_app_version():
+    """Extract version from historial.md"""
+    try:
+        historial_path = os.path.join(os.path.dirname(__file__), 'historial.md')
+        with open(historial_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('## ['):
+                    # Extract version from line like "## [1.2026.0318] - 2026-03-18"
+                    version = line.split('[')[1].split(']')[0]
+                    return version
+    except Exception:
+        pass
+    return "1.0.0"
 
 def seed_reference_data():
     """Seed catalog tables only when schema already exists."""
@@ -65,6 +79,25 @@ def create_app(config_class=Config):
     @login_manager.user_loader
     def load_user(id):
         return User.query.get(int(id))
+
+    @app.before_request
+    def track_site_visits():
+        if request.method != 'GET':
+            return
+        if request.endpoint in (None, 'static', 'uploaded_file'):
+            return
+
+        from models import SiteStats
+        SiteStats.increment_total_visits()
+
+    @app.context_processor
+    def inject_site_stats():
+        from models import SiteStats
+        stats = SiteStats.query.get(1)
+        return {
+            'site_total_visits': stats.total_visits if stats else 0,
+            'app_version': get_app_version()
+        }
 
     with app.app_context():
         from routes.auth import bp as auth_bp

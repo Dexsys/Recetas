@@ -12,6 +12,10 @@
 
 <body>
     <header style="position: relative;">
+        <div class="header-meta-nav">
+            <a href="{{ url_for('main.about') }}">Acerca de</a>
+            <span>Versión {{ app_version }}</span>
+        </div>
         <div class="auth-nav">
             {% if current_user.is_authenticated %}
             <span style="color: #e0e0e0;">Hola, <strong>{{ current_user.username }}</strong></span>
@@ -53,7 +57,8 @@
     </main>
 
     <footer>
-        <p>&copy; 2026 Sabor & Familia | v1.0.1</p>
+        <p>&copy; 2026 Sabor & Familia | v{{ app_version }}</p>
+        <p>Visitas del sitio: <strong>{{ "{:,.0f}".format(site_total_visits).replace(',', '.') }}</strong></p>
     </footer>
 </body>
 

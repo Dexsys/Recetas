@@ -40,10 +40,10 @@ FALLBACK_ITEMS = [
     "forms.py",
     "models.py",
     "requirements.txt",
-    "README.md",
-    "historial.md",
     "recetas.service",
 ]
+
+MANDATORY_DOCS = ["historial.md", "TODO.md", "README.md"]
 
 
 def get_version_info():
@@ -88,6 +88,35 @@ def update_readme(version, date_iso):
     if updated != content:
         readme_path.write_text(updated, encoding="utf-8")
         print("  [OK] README.md actualizado")
+
+
+def update_todo(date_iso):
+    todo_path = LOCAL / "TODO.md"
+    if not todo_path.exists():
+        return
+
+    content = todo_path.read_text(encoding="utf-8")
+    marker = "- Ultima revision predeploy:"
+    replacement = f"{marker} {date_iso}"
+
+    if marker in content:
+        updated = re.sub(r"(?m)^- Ultima revision predeploy:.*$", replacement, content)
+    else:
+        lines = content.splitlines()
+        if lines:
+            lines.insert(1, "")
+            lines.insert(2, "## Control de despliegue")
+            lines.insert(3, replacement)
+            lines.insert(4, "")
+            updated = "\n".join(lines)
+            if content.endswith("\n"):
+                updated += "\n"
+        else:
+            updated = f"# TODO\n\n## Control de despliegue\n{replacement}\n"
+
+    if updated != content:
+        todo_path.write_text(updated, encoding="utf-8")
+        print("  [OK] TODO.md actualizado")
 
 
 def update_historial(version, date_iso, action_message):
@@ -150,10 +179,62 @@ def update_historial(version, date_iso, action_message):
 
 def update_docs_before_operation(action_message):
     version, date_iso = get_version_info()
-    print("[pre] Actualizando historial y README...")
+    print("[pre] Actualizando historial, TODO y README...")
     update_readme(version, date_iso)
     update_historial(version, date_iso, action_message)
+    update_todo(date_iso)
     return version
+
+
+def get_worktree_changed_files():
+    """Return changed files (staged/unstaged) compared to HEAD."""
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"],
+            cwd=str(LOCAL),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    except Exception:
+        return []
+
+
+def confirm_requirements_if_needed():
+    changed_files = get_worktree_changed_files()
+    if not changed_files:
+        return
+
+    has_python_changes = any(
+        file_path.endswith('.py') or file_path.startswith('migrations/')
+        for file_path in changed_files
+    )
+    requirements_changed = 'requirements.txt' in changed_files
+
+    if not has_python_changes or requirements_changed:
+        return
+
+    skip_check = env_flag("DEPLOY_SKIP_REQUIREMENTS_CHECK", False)
+    if skip_check:
+        print("  [WARN] Omitiendo validación de requirements por DEPLOY_SKIP_REQUIREMENTS_CHECK=1")
+        return
+
+    print("[pre][ATENCION] Se detectaron cambios Python/migraciones sin cambios en requirements.txt")
+    print("               Si agregaste dependencias, actualiza requirements.txt antes del deploy.")
+    answer = input("               Confirmas que requirements.txt no necesita cambios? [s/N]: ").strip().lower()
+    if answer not in {"s", "si", "sí", "y", "yes"}:
+        print("[ERROR] Deploy cancelado. Actualiza requirements.txt y vuelve a intentar.")
+        sys.exit(1)
+
+
+def ensure_mandatory_docs_present():
+    missing = [name for name in MANDATORY_DOCS if not (LOCAL / name).exists()]
+    if missing:
+        print("[ERROR] Faltan archivos obligatorios de documentacion predeploy:")
+        for item in missing:
+            print(f"        - {item}")
+        sys.exit(1)
 
 
 def get_items_to_deploy():
@@ -224,6 +305,7 @@ def progress(filename, size, sent):
 
 def main():
     load_env_file(LOCAL / ".env")
+    ensure_mandatory_docs_present()
 
     password = os.environ.get("DEPLOY_SSH_PASSWORD")
     service = os.environ.get("DEPLOY_SERVICE_NAME", DEFAULT_SERVICE)
@@ -238,6 +320,7 @@ def main():
         sys.exit(1)
 
     version = update_docs_before_operation("Deploy a produccion ejecutado mediante deploy_to_server.py.")
+    confirm_requirements_if_needed()
     paramiko, SCPClient = check_dependencies()
 
     items = get_items_to_deploy()

@@ -140,3 +140,8 @@ def suggest():
 def techniques():
     techniques = Technique.query.order_by(Technique.order).all()
     return render_template('techniques.html', title='Técnicas Base', techniques=techniques)
+
+
+@bp.route('/about')
+def about():
+    return render_template('about.html', title='Acerca de')

@@ -3,11 +3,13 @@ from flask_login import login_required, current_user
 from extensions import db
 from models import Recipe, Ingredient, Category, MenuType, Unit, IngredientPrice, RecipeImage
 import os
+import io
 from werkzeug.utils import secure_filename
 from flask import current_app
 from datetime import datetime
 import urllib.request
 import json
+from PIL import Image, ImageOps, UnidentifiedImageError
 from rich_text import sanitize_rich_text, normalize_rich_text_for_editor
 
 def get_usd_rate(date_obj):
@@ -51,6 +53,8 @@ UNIT_EQUIVALENTS = {
 
 WEIGHT_COMMERCIAL = {'gr': 1.0, 'kg': 1000.0}
 VOLUME_COMMERCIAL = {'cc': 1.0, 'ml': 1.0, 'l': 1000.0}
+MAX_IMAGE_SIZE_BYTES = 1 * 1024 * 1024  # 1 MB por imagen
+MAX_IMAGE_DIMENSION = 1920
 
 
 def find_matching_price(all_prices, ingredient_name):
@@ -97,6 +101,64 @@ def compute_ingredient_cost(price_entry, ingredient):
     unit_price = price_entry.price / total_base_qty
     return equivalent_qty * amount, display_unit, round(equivalent_qty * amount * unit_price)
 
+
+def optimize_and_save_image(file_storage, filename_prefix, index):
+    original_name = secure_filename(file_storage.filename or 'imagen')
+    base_name = os.path.splitext(original_name)[0] or 'imagen'
+    output_name = f"{filename_prefix}_{index}_{base_name}.webp"
+    output_path = os.path.join(current_app.config['UPLOAD_FOLDER'], output_name)
+
+    try:
+        file_storage.stream.seek(0)
+        image = Image.open(file_storage.stream)
+        image = ImageOps.exif_transpose(image)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        raise ValueError('archivo de imagen no valido') from exc
+
+    image.thumbnail((MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION), Image.Resampling.LANCZOS)
+
+    quality_steps = [85, 78, 72, 66, 60, 54, 48, 42]
+    scale_factor = 1.0
+    compressed_bytes = None
+
+    for _ in range(4):
+        working_image = image.copy()
+        if scale_factor < 1.0:
+            new_size = (
+                max(320, int(working_image.width * scale_factor)),
+                max(320, int(working_image.height * scale_factor)),
+            )
+            working_image = working_image.resize(new_size, Image.Resampling.LANCZOS)
+
+        for quality in quality_steps:
+            output = io.BytesIO()
+            working_image.save(output, format='WEBP', quality=quality, method=6)
+            payload = output.getvalue()
+            if len(payload) <= MAX_IMAGE_SIZE_BYTES:
+                compressed_bytes = payload
+                break
+
+            if compressed_bytes is None or len(payload) < len(compressed_bytes):
+                compressed_bytes = payload
+
+        if compressed_bytes and len(compressed_bytes) <= MAX_IMAGE_SIZE_BYTES:
+            break
+
+        scale_factor *= 0.85
+
+    if not compressed_bytes:
+        raise ValueError('no fue posible procesar la imagen')
+
+    with open(output_path, 'wb') as destination:
+        destination.write(compressed_bytes)
+
+    if len(compressed_bytes) > MAX_IMAGE_SIZE_BYTES:
+        raise ValueError('la imagen sigue siendo mayor a 1 MB incluso despues de optimizar')
+
+    return output_name
+
 bp = Blueprint('recipes', __name__)
 
 @bp.route('/')
@@ -142,16 +204,18 @@ def create():
         # Guardar Imágenes (múltiples)
         image_filename = None
         saved_extra_files = []
-        uploaded_files = request.files.getlist('images')
+        uploaded_files = [f for f in request.files.getlist('images') if f and f.filename != '']
+        filename_prefix = f"{current_user.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         for idx, file in enumerate(uploaded_files):
-            if file and file.filename != '':
-                fn = secure_filename(file.filename)
-                new_fn = f"{current_user.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{idx}_{fn}"
-                file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], new_fn))
-                if idx == 0:
-                    image_filename = new_fn
-                else:
-                    saved_extra_files.append(new_fn)
+            try:
+                new_fn = optimize_and_save_image(file, filename_prefix, idx)
+            except ValueError as exc:
+                flash(f'No se pudo procesar una imagen: {exc}.', 'error')
+                return redirect(url_for('recipes.create'))
+            if idx == 0:
+                image_filename = new_fn
+            else:
+                saved_extra_files.append(new_fn)
 
         is_approved = current_user.role == 'admin'
 
@@ -240,6 +304,9 @@ def detail(recipe_id):
         if not current_user.is_authenticated or (current_user.id != recipe.user_id and current_user.role != 'admin'):
             flash('Esta receta está pendiente de aprobación.', 'error')
             return redirect(url_for('main.index'))
+
+    recipe.views = (recipe.views or 0) + 1
+    db.session.commit()
 
     all_prices = IngredientPrice.query.all()
 
@@ -386,18 +453,21 @@ def edit(recipe_id):
                 pass
 
         # Nuevas imágenes subidas
-        new_files = request.files.getlist('images')
+        new_files = [f for f in request.files.getlist('images') if f and f.filename != '']
+
         max_order_val = db.session.query(db.func.max(RecipeImage.order)).filter_by(recipe_id=recipe.id).scalar() or 0
+        filename_prefix = f"{recipe.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         for idx, file in enumerate(new_files):
-            if file and file.filename != '':
-                fn = secure_filename(file.filename)
-                unique_fn = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{idx}_{fn}"
-                file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], unique_fn))
-                if not recipe.image_filename:
-                    recipe.image_filename = unique_fn
-                else:
-                    max_order_val += 1
-                    db.session.add(RecipeImage(filename=unique_fn, recipe_id=recipe.id, order=max_order_val))
+            try:
+                unique_fn = optimize_and_save_image(file, filename_prefix, idx)
+            except ValueError as exc:
+                flash(f'No se pudo procesar una imagen: {exc}.', 'error')
+                return redirect(url_for('recipes.edit', recipe_id=recipe.id))
+            if not recipe.image_filename:
+                recipe.image_filename = unique_fn
+            else:
+                max_order_val += 1
+                db.session.add(RecipeImage(filename=unique_fn, recipe_id=recipe.id, order=max_order_val))
             
         # Re-create ingredients (clear old, add new ones)
         Ingredient.query.filter_by(recipe_id=recipe.id).delete()

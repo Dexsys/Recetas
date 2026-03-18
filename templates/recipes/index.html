@@ -50,7 +50,7 @@
                 {{ recipe.category }} | {{ recipe.menu_type }}
             </p>
             <p style="color:var(--text-color);">
-                <span title="Dificultad">{% for _ in range(recipe.difficulty or 0) %}⭐{% endfor %}</span>
+                <span title="Dificultad">{% for _ in range(recipe.difficulty or 0) %}🥄{% endfor %}</span>
                 &nbsp;|&nbsp;
                 <span title="Tiempo">⏱️ {{ recipe.prep_time_minutes or '?' }} min</span>
             </p>

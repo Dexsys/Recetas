@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container" style="max-width: 760px;">
+    <h2 class="handwritten">Acerca de</h2>
+    <p>Este sitio reúne recetas familiares, técnicas base de cocina y herramientas simples para organizar preparaciones, costos y comentarios en un solo lugar.</p>
+    <p><strong>Aplicación:</strong> Sistema de Gestión de Recetas Familiares</p>
+    <p><strong>Versión actual:</strong> {{ app_version }}</p>
+    <p><strong>Visitas del sitio:</strong> {{ "{:,.0f}".format(site_total_visits).replace(',', '.') }}</p>
+    <p><strong>URL:</strong> <a href="http://recetas.dexsys.cl" target="_blank" rel="noopener">http://recetas.dexsys.cl</a></p>
+</div>
+{% endblock %}

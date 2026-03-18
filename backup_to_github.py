@@ -7,11 +7,14 @@ Uso:
 """
 
 import datetime
+import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 LOCAL = Path(__file__).parent
+MANDATORY_DOCS = ["historial.md", "TODO.md", "README.md"]
 
 
 def run(cmd):
@@ -31,6 +34,13 @@ def get_version_info():
     return version, date_iso
 
 
+def env_flag(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def update_readme(version, date_iso):
     readme_path = LOCAL / "README.md"
     if not readme_path.exists():
@@ -43,6 +53,35 @@ def update_readme(version, date_iso):
     if updated != content:
         readme_path.write_text(updated, encoding="utf-8")
         print("[OK] README.md actualizado")
+
+
+def update_todo(date_iso):
+    todo_path = LOCAL / "TODO.md"
+    if not todo_path.exists():
+        return
+
+    content = todo_path.read_text(encoding="utf-8")
+    marker = "- Ultima revision prebackup:"
+    replacement = f"{marker} {date_iso}"
+
+    if marker in content:
+        updated = re.sub(r"(?m)^- Ultima revision prebackup:.*$", replacement, content)
+    else:
+        lines = content.splitlines()
+        if lines:
+            lines.insert(1, "")
+            lines.insert(2, "## Control de respaldo")
+            lines.insert(3, replacement)
+            lines.insert(4, "")
+            updated = "\n".join(lines)
+            if content.endswith("\n"):
+                updated += "\n"
+        else:
+            updated = f"# TODO\n\n## Control de respaldo\n{replacement}\n"
+
+    if updated != content:
+        todo_path.write_text(updated, encoding="utf-8")
+        print("[OK] TODO.md actualizado")
 
 
 def update_historial(version, date_iso):
@@ -104,12 +143,65 @@ def update_historial(version, date_iso):
     print("[OK] historial.md actualizado")
 
 
+def ensure_mandatory_docs_present():
+    missing = [name for name in MANDATORY_DOCS if not (LOCAL / name).exists()]
+    if missing:
+        print("[ERROR] Faltan archivos obligatorios de documentacion prebackup:")
+        for item in missing:
+            print(f"        - {item}")
+        raise SystemExit(1)
+
+
+def get_worktree_changed_files():
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"],
+            cwd=str(LOCAL),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    except Exception:
+        return []
+
+
+def confirm_requirements_if_needed():
+    changed_files = get_worktree_changed_files()
+    if not changed_files:
+        return
+
+    has_python_changes = any(
+        file_path.endswith('.py') or file_path.startswith('migrations/')
+        for file_path in changed_files
+    )
+    requirements_changed = 'requirements.txt' in changed_files
+
+    if not has_python_changes or requirements_changed:
+        return
+
+    skip_check = env_flag("BACKUP_SKIP_REQUIREMENTS_CHECK", False)
+    if skip_check:
+        print("[WARN] Omitiendo validacion de requirements por BACKUP_SKIP_REQUIREMENTS_CHECK=1")
+        return
+
+    print("[pre][ATENCION] Se detectaron cambios Python/migraciones sin cambios en requirements.txt")
+    print("               Si agregaste dependencias, actualiza requirements.txt antes del respaldo.")
+    answer = input("               Confirmas que requirements.txt no necesita cambios? [s/N]: ").strip().lower()
+    if answer not in {"s", "si", "sí", "y", "yes"}:
+        print("[ERROR] Respaldo cancelado. Actualiza requirements.txt y vuelve a intentar.")
+        sys.exit(1)
+
+
 def main():
+    ensure_mandatory_docs_present()
     version, date_iso = get_version_info()
     update_readme(version, date_iso)
+    update_todo(date_iso)
     update_historial(version, date_iso)
+    confirm_requirements_if_needed()
 
-    run(["git", "add", "README.md", "historial.md"])
+    run(["git", "add", "README.md", "TODO.md", "historial.md"])
     run(["git", "add", "."])
 
     commit_message = f"chore: respaldo GitHub {version}"

@@ -1,5 +1,13 @@
 # TODO - Mejoras de Seguridad y Robustez (Recetas)
 
+## Control de respaldo
+- Ultima revision prebackup: 2026-03-18
+
+
+## Control de despliegue
+- Ultima revision predeploy: 2026-03-18
+
+
 ## Objetivo de negocio
 - Solo usuarios registrados y aprobados pueden ver recetas.
 - Registro de usuarios requiere aprobacion de administrador.

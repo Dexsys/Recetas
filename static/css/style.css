@@ -45,6 +45,28 @@ header h1 {
     gap: 1rem;
 }
 
+.header-meta-nav {
+    position: absolute;
+    top: 1rem;
+    left: 2rem;
+    font-size: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+}
+
+.header-meta-nav a,
+.header-meta-nav span {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.header-meta-nav a:hover {
+    color: var(--accent-color);
+}
+
 .auth-nav a {
     color: white;
     text-decoration: none;
@@ -76,6 +98,24 @@ nav a {
 
 nav a:hover {
     color: var(--accent-color);
+}
+
+@media (max-width: 768px) {
+    header {
+        padding-top: 4.5rem;
+    }
+
+    .auth-nav,
+    .header-meta-nav {
+        position: static;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .header-meta-nav {
+        gap: 0.15rem;
+    }
 }
 
 main {
