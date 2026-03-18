@@ -33,6 +33,11 @@ Actua como un ingeniero DevOps + Backend Senior. Tu objetivo es dejar un proyect
 - actualizar `historial.md` y `README.md`;
 - instalar/actualizar el servicio systemd en `/etc/systemd/system`;
 - hacer `daemon-reload`, `enable` y `restart`.
+11. Configurar Nginx del sitio:
+- crear archivo de sitio Nginx para el dominio de la app;
+- copiar a `/etc/nginx/sites-available/<app>`;
+- crear enlace en `/etc/nginx/sites-enabled/<app>`;
+- validar con `nginx -t` y recargar Nginx.
 
 ## Entregables minimos
 
@@ -68,7 +73,8 @@ Genera o actualiza estos archivos:
 - `systemctl daemon-reload`;
 - `systemctl enable {{SERVICE_NAME}}`;
 - `systemctl restart {{SERVICE_NAME}}`;
-- validar `systemctl is-active {{SERVICE_NAME}}`.
+- validar `systemctl is-active {{SERVICE_NAME}}`;
+- instalar y validar Nginx (`sites-available`, `sites-enabled`, `nginx -t`, `systemctl reload nginx`).
 4. El respaldo GitHub debe:
 - actualizar `README.md` y `historial.md` antes del commit;
 - hacer `git add`, `git commit`, `git push origin main`.

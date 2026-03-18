@@ -8,6 +8,7 @@ from flask import current_app
 from datetime import datetime
 import urllib.request
 import json
+from rich_text import sanitize_rich_text, normalize_rich_text_for_editor
 
 def get_usd_rate(date_obj):
     date_str = date_obj.strftime('%d-%m-%Y')
@@ -129,9 +130,14 @@ def create():
         prep_time = request.form.get('prep_time')
         difficulty = request.form.get('difficulty')
         cost = request.form.get('cost')
-        instructions = request.form.get('instructions')
+        instructions_raw = request.form.get('instructions', '')
+        instructions = sanitize_rich_text(instructions_raw)
         original_author = request.form.get('original_author')
         url_reference = request.form.get('url_reference')
+
+        if not instructions:
+            flash('La preparación no puede estar vacía.', 'error')
+            return redirect(url_for('recipes.create'))
         
         # Guardar Imágenes (múltiples)
         image_filename = None
@@ -358,7 +364,11 @@ def edit(recipe_id):
         else:
             recipe.cost_usd = None
             
-        recipe.instructions = request.form.get('instructions')
+        instructions_raw = request.form.get('instructions', '')
+        recipe.instructions = sanitize_rich_text(instructions_raw)
+        if not recipe.instructions:
+            flash('La preparación no puede estar vacía.', 'error')
+            return redirect(url_for('recipes.edit', recipe_id=recipe.id))
         recipe.updated_at = datetime.now()
 
         # Eliminar imagen principal si fue marcada
@@ -426,6 +436,7 @@ def edit(recipe_id):
     ingredient_suggestions = get_ingredient_suggestions()
     
     return render_template('recipes/edit.html', title='Editar Receta', recipe=recipe, categories=categories, menu_types=menu_types, units=units,
+                           instructions_editor_html=normalize_rich_text_for_editor(recipe.instructions),
                            ingredient_suggestions=ingredient_suggestions)
 
 @bp.route('/<int:recipe_id>/delete', methods=['POST'])

@@ -79,7 +79,11 @@ def update_readme(version, date_iso):
 
     content = readme_path.read_text(encoding="utf-8")
     updated = re.sub(r"(?m)^- Version:.*$", f"- Version: {version}", content)
-    updated = re.sub(r"(?m)^- Ultima actualización:.*$", f"- Ultima actualización: {date_iso}", updated)
+    updated = re.sub(
+        r"(?m)^- Ultima actualizaci[oó]n:.*$",
+        f"- Ultima actualizacion: {date_iso}",
+        updated,
+    )
 
     if updated != content:
         readme_path.write_text(updated, encoding="utf-8")
@@ -170,6 +174,28 @@ def get_items_to_deploy():
 
     return [item for item in FALLBACK_ITEMS if (LOCAL / item).exists()]
 
+
+def get_untracked_items():
+    """Return untracked, non-ignored files to prevent silent deploy omissions."""
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            cwd=str(LOCAL),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    except Exception:
+        return []
+
+
+def env_flag(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
 def check_dependencies():
     try:
         paramiko = importlib.import_module("paramiko")
@@ -218,6 +244,21 @@ def main():
     if not items:
         print("[ERROR] No se encontraron archivos para desplegar.")
         sys.exit(1)
+
+    untracked_items = get_untracked_items()
+    include_untracked = env_flag("DEPLOY_INCLUDE_UNTRACKED", False)
+    if untracked_items and not include_untracked:
+        print("[ERROR] Hay archivos sin seguimiento (git untracked).")
+        print("        Tu deploy copia archivos de git y estos quedarán fuera, pudiendo romper producción.")
+        for item in untracked_items:
+            print(f"        - {item}")
+        print("\n        Soluciones:")
+        print("        1) Agrega los archivos necesarios: git add <archivo>")
+        print("        2) O permite incluirlos en este deploy: DEPLOY_INCLUDE_UNTRACKED=1")
+        sys.exit(1)
+    if untracked_items and include_untracked:
+        print("[WARN] Incluyendo archivos untracked por DEPLOY_INCLUDE_UNTRACKED=1")
+        items = sorted(set(items + untracked_items))
 
     print()
     print("=" * 60)

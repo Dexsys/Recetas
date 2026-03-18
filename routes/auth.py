@@ -1,11 +1,63 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+import smtplib
+import ssl
+from email.message import EmailMessage
+
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import current_user, login_user, logout_user
 from extensions import db
 from models import User
-from forms import LoginForm, RegistrationForm
+from forms import LoginForm, RegistrationForm, RequestPasswordResetForm, ResetPasswordForm
 from urllib.parse import urlsplit
 
 bp = Blueprint('auth', __name__)
+
+
+def send_reset_password_email(user):
+    token = user.get_reset_password_token()
+    reset_link = url_for('auth.reset_password', token=token, _external=True)
+
+    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+    smtp_server = current_app.config.get('MAIL_SERVER')
+
+    if not smtp_server or not sender:
+        current_app.logger.warning('SMTP no configurado. Enlace de recuperación para %s: %s', user.email, reset_link)
+        return False
+
+    msg = EmailMessage()
+    msg['Subject'] = 'Recuperación de contraseña - Recetas'
+    msg['From'] = sender
+    msg['To'] = user.email
+    msg.set_content(
+        'Hola,\n\n'
+        'Recibimos una solicitud para restablecer tu contraseña.\n'
+        f'Usa este enlace (válido por 1 hora):\n{reset_link}\n\n'
+        'Si no solicitaste este cambio, puedes ignorar este mensaje.\n'
+    )
+
+    port = current_app.config.get('MAIL_PORT', 587)
+    username = current_app.config.get('MAIL_USERNAME')
+    password = current_app.config.get('MAIL_PASSWORD')
+    use_ssl = current_app.config.get('MAIL_USE_SSL', False)
+    use_tls = current_app.config.get('MAIL_USE_TLS', True)
+
+    try:
+        if use_ssl:
+            with smtplib.SMTP_SSL(smtp_server, port, timeout=15) as server:
+                if username and password:
+                    server.login(username, password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(smtp_server, port, timeout=15) as server:
+                if use_tls:
+                    server.starttls(context=ssl.create_default_context())
+                if username and password:
+                    server.login(username, password)
+                server.send_message(msg)
+        return True
+    except Exception:
+        current_app.logger.exception('Error enviando correo de recuperación para %s', user.email)
+        current_app.logger.warning('Enlace de recuperación para %s: %s', user.email, reset_link)
+        return False
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -52,3 +104,41 @@ def register():
         flash('¡Felicidades, te has registrado exitosamente!', 'success')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', title='Registrarse', form=form)
+
+
+@bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+
+    form = RequestPasswordResetForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            sent = send_reset_password_email(user)
+            if not sent:
+                flash('No fue posible enviar el correo automáticamente. Contacta al administrador.', 'warning')
+        flash('Si el email existe, se ha enviado un enlace de recuperación.', 'info')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/forgot_password.html', title='Recuperar contraseña', form=form)
+
+
+@bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+
+    user = User.verify_reset_password_token(token)
+    if not user:
+        flash('El enlace de recuperación es inválido o expiró.', 'error')
+        return redirect(url_for('auth.forgot_password'))
+
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash('Tu contraseña fue actualizada. Ya puedes iniciar sesión.', 'success')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/reset_password.html', title='Nueva contraseña', form=form)

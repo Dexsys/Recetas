@@ -14,3 +14,14 @@ class RegistrationForm(FlaskForm):
     password = PasswordField('Contraseña', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Confirmar Contraseña', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Registrarse')
+
+
+class RequestPasswordResetForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Enviar enlace de recuperación')
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Nueva contraseña', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Confirmar contraseña', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Actualizar contraseña')

@@ -52,8 +52,10 @@ python app.py
 
 La aplicación queda disponible en:
 
-- http://127.0.0.1:5100
+- http://127.0.0.1:5110
 
+sudo systemctl daemon-reload && sudo systemctl enable recetas && sudo systemctl restart recetas
+sudo journalctl -u recetas -n 30 
 ## Estructura principal
 
 - app.py: fabrica y arranque de la app Flask.
@@ -113,6 +115,25 @@ Con el entorno activo:
 
 - Si existen tanto venv como .venv, usar solo .venv para evitar confusiones.
 - Si cambias dependencias, volver a generar requirements.txt.
+- Puerto de runtime de la app/Gunicorn: 5110.
+- El deploy instala/actualiza `recetas.service` en systemd automaticamente.
+- El deploy instala/activa configuracion Nginx automaticamente si Nginx está instalado en el servidor.
+- El deploy valida archivos `untracked` antes de copiar para evitar errores por modulos nuevos no versionados.
+- Si necesitas incluir `untracked` de forma excepcional, usa `DEPLOY_INCLUDE_UNTRACKED=1`.
+
+## Editor de preparacion enriquecido
+
+- La preparacion de recetas usa editor visual (negrita, italica, subrayado, resaltado, listas y citas).
+- El contenido HTML se sanitiza en backend antes de guardar para mitigar XSS.
+- Dependencias agregadas para sanitizacion: `bleach`, `tinycss2` y `webencodings`.
+
+## Recuperacion de contraseña
+
+- El login incluye la opcion "¿Olvidaste tu contraseña?".
+- Para envio real por correo, configurar en `.env`:
+   - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USE_SSL`
+   - `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_DEFAULT_SENDER`
+- Si SMTP no está configurado o falla, el enlace se registra en logs para soporte administrativo.
 
 ## Historial
 

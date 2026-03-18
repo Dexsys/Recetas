@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
@@ -17,6 +19,19 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def get_reset_password_token(self):
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return serializer.dumps({'user_id': self.id}, salt='password-reset-salt')
+
+    @staticmethod
+    def verify_reset_password_token(token, max_age=3600):
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            data = serializer.loads(token, salt='password-reset-salt', max_age=max_age)
+        except (BadSignature, SignatureExpired):
+            return None
+        return User.query.get(data.get('user_id'))
 
 class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
