@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask import current_app
 from flask_login import UserMixin
+from sqlalchemy.orm import validates
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
 
@@ -13,6 +14,11 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), default='invitado') # admin, colaborador, invitado
     recipes = db.relationship('Recipe', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
+
+    @validates('email')
+    def _normalize_email(self, _key, value):
+        # Normaliza almacenamiento para evitar duplicados por mayusculas/espacios.
+        return (value or '').strip().lower()
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

@@ -7,6 +7,35 @@
 ---
 
 ## [1.2026.0318] - 2026-03-18
+## [1.2026.0321] - 2026-03-21
+
+### Agregado
+- Script `setup_dev_db.py`: crea la base de datos de desarrollo `dev_sabor_familia` clonando el esquema de produccion.
+- Script `import_prod_sqlite.py`: descarga el SQLite del servidor via SSH/SCP y migra los datos a MariaDB `sabor_familia`.
+- Archivo `.env.prod`: configuracion de produccion separada (no versionada), subida automaticamente al servidor en cada deploy.
+- Archivo `.env.example`: plantilla publica de referencia para configurar el entorno.
+
+### Tecnico
+- `config.py`: eliminado el fallback a SQLite. Ahora MariaDB es obligatorio. Si faltan credenciales, se lanza `EnvironmentError` con mensaje claro.
+- `config.py`: agregada funcion `_load_dotenv()` que carga automaticamente el archivo `.env` al importar el modulo, sin dependencias externas.
+- `backup_db.py`: reescrito completamente para MariaDB usando pymysql. Exporta backups como `.sql` con timestamp. Muestra SQLite legacy en listado si existen.
+- `migrate_to_mariadb.py`: credenciales leidas desde variables de entorno (no hardcodeadas). Acepta ruta SQLite como argumento CLI. Funcion `migrate()` reutilizable desde otros scripts.
+- `deploy_to_server.py`: nuevo paso `[0]` verifica existencia de `.env.prod` antes del deploy. Nuevo paso `[3.0/4]` sube `.env.prod` al servidor como `.env`. Nuevo paso `[3.1.5/4]` verifica conexion a la base de datos en el servidor.
+- `.env`: actualizado a `DB_NAME=dev_sabor_familia` y `APP_ENV=development` para entorno local.
+- `.gitignore`: agregado `.env.prod` para que las credenciales de produccion no sean versionadas.
+
+### Migracion de Base de Datos
+- Separacion definitiva de entornos: desarrollo usa `dev_sabor_familia`, produccion usa `sabor_familia`, ambas en MariaDB 192.168.0.100.
+- Eliminadas todas las referencias a SQLite del codigo de produccion.
+
+### Infraestructura
+- Respaldo a GitHub ejecutado mediante backup_to_github.py.
+- Deploy a produccion ejecutado mediante deploy_to_server.py.
+- Deploy actualizado para subir configuracion de produccion al servidor automaticamente.
+
+---
+
+## [1.2026.0318] - 2026-03-18
 
 ### Agregado
 - Sin cambios registrados.

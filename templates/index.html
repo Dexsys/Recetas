@@ -1,66 +1,66 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="hero">
-    <h2 class="handwritten" style="font-size: 3rem;">Descubre Recetas Exquisitas</h2>
-    <p>Busca entre todas nuestras categorías y sorpréndete.</p>
+<div class="text-center py-12">
+    <h2 class="font-handwritten text-5xl text-caramel mb-4">Descubre Recetas Exquisitas</h2>
+    <p class="text-mocha/80 text-lg">Busca entre todas nuestras categorías y sorpréndete.</p>
 
     <form action="{{ url_for('main.index') }}" method="get"
-        style="display: flex; gap: 10px; justify-content: center; margin-top: 2rem; flex-wrap: wrap;">
+        class="flex flex-wrap gap-3 justify-center mt-8">
         <input type="text" name="q" placeholder="Buscar por título..." value="{{ q or '' }}"
-            style="padding: 0.8rem; border-radius: 4px; border: 1px solid #ccc; width: 300px; max-width: 100%;">
-        <select name="category" style="padding: 0.8rem; border-radius: 4px; border: 1px solid #ccc;">
+            class="px-4 py-3 border border-gray-300 rounded-lg w-72 focus:outline-none focus:ring-2 focus:ring-caramel focus:border-transparent">
+        <select name="category" class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-caramel focus:border-transparent">
             <option value="">Todas las Categorías</option>
             {% for c in categories %}
             <option value="{{ c.name }}" {% if category==c.name %}selected{% endif %}>{{ c.name }}</option>
             {% endfor %}
         </select>
-        <select name="menu_type" style="padding: 0.8rem; border-radius: 4px; border: 1px solid #ccc;">
+        <select name="menu_type" class="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-caramel focus:border-transparent">
             <option value="">Todos los Menús</option>
             {% for m in menu_types %}
             <option value="{{ m.name }}" {% if menu_type==m.name %}selected{% endif %}>{{ m.name }}</option>
             {% endfor %}
         </select>
-        <button type="submit" class="btn-primary" style="width: auto;">Buscar</button>
-        <a href="{{ url_for('main.index') }}" class="btn-secondary" style="width: auto; line-height: 2;">Limpiar</a>
+        <button type="submit" class="bg-caramel hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">Buscar</button>
+        <a href="{{ url_for('main.index') }}" class="bg-gray-200 hover:bg-gray-300 text-espresso px-6 py-3 rounded-lg font-semibold transition-colors">Limpiar</a>
     </form>
 </div>
 
-<div class="recipe-grid"
-    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
     {% for recipe in recipes %}
-    <a href="{{ url_for('recipes.detail', recipe_id=recipe.id) }}" style="text-decoration: none; color: inherit;">
-        <div class="recipe-card"
-            style="background:white; border-radius:8px; overflow:hidden; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition: transform 0.3s;"
-            onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+    <a href="{{ url_for('recipes.detail', recipe_id=recipe.id) }}" class="group">
+        <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group-hover:scale-[1.02]">
             {% if recipe.image_filename %}
             <img src="{{ url_for('uploaded_file', filename=recipe.image_filename) }}" alt="{{ recipe.title }}"
-                style="width:100%; height:200px; object-fit:cover;">
+                class="w-full h-48 object-cover">
             {% else %}
-            <div
-                style="width:100%; height:200px; background:#e0e0e0; display:flex; align-items:center; justify-content:center; color:#999;">
-                Sin imagen</div>
+            <div class="w-full h-48 bg-gradient-to-br from-mocha/20 to-mocha/40 flex items-center justify-center text-mocha/50">
+                <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+            </div>
             {% endif %}
-            <div style="padding: 1.5rem;">
-                <h3 class="handwritten" style="margin:0 0 0.5rem 0; font-size:1.8rem; color:var(--text-color);">{{
-                    recipe.title }}</h3>
-                <p style="font-size:0.9rem; color:#666; margin-bottom:1rem;">
-                    {{ recipe.category }} | {{ recipe.menu_type }}
-                </p>
-                <p style="color:var(--text-color);">
-                    <span title="Dificultad">{% for _ in range(recipe.difficulty or 0) %}🥄{% endfor %}</span>
-                    &nbsp;|&nbsp;
-                    {% set est = estimated_costs.get(recipe.id) %}
-                    <span title="Valor total estimado">Valor total estimado: {% if est %}${{ "{:,.0f}".format(est).replace(',', '.') }}{% else %}-{% endif %}</span>
-                    &nbsp;|&nbsp;
-                    <span title="Tiempo">⏱️ {{ recipe.prep_time_minutes or '?' }} min</span>
-                </p>
+            <div class="p-5">
+                <h3 class="font-handwritten text-2xl text-espresso mb-2 group-hover:text-caramel transition-colors">{{ recipe.title }}</h3>
+                <p class="text-sm text-mocha/70 mb-3">{{ recipe.category }} · {{ recipe.menu_type }}</p>
+                <div class="flex items-center justify-between text-sm text-espresso">
+                    <span class="flex items-center gap-1" title="Dificultad">
+                        {% for _ in range(recipe.difficulty or 0) %}🥄{% endfor %}
+                    </span>
+                    <span>{% set est = estimated_costs.get(recipe.id) %}
+                        {% if est %}${{ "{:,.0f}".format(est).replace(',', '.') }}{% else %}-{% endif %}
+                    </span>
+                    <span class="flex items-center gap-1">⏱️ {{ recipe.prep_time_minutes or '?' }} min</span>
+                </div>
             </div>
         </div>
     </a>
     {% else %}
-    <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem;">
-        <h3 class="handwritten" style="color:#999; font-size:2rem;">No se encontraron recetas con esos filtros.</h3>
+    <div class="col-span-full text-center py-16">
+        <svg class="w-24 h-24 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="font-handwritten text-3xl text-gray-400">No se encontraron recetas con esos filtros.</h3>
     </div>
     {% endfor %}
 </div>

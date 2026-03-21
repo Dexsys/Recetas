@@ -307,6 +307,15 @@ def main():
     load_env_file(LOCAL / ".env")
     ensure_mandatory_docs_present()
 
+    # Verificar que existe .env.prod antes de continuar
+    env_prod_path = LOCAL / ".env.prod"
+    if not env_prod_path.exists():
+        print("[ERROR] No se encontro el archivo .env.prod")
+        print("        Este archivo contiene las credenciales de produccion")
+        print("        y se sube al servidor como .env durante el deploy.")
+        print("        Crea .env.prod usando .env.example como referencia.")
+        sys.exit(1)
+
     password = os.environ.get("DEPLOY_SSH_PASSWORD")
     service = os.environ.get("DEPLOY_SERVICE_NAME", DEFAULT_SERVICE)
     remote_python = os.environ.get("DEPLOY_PYTHON", DEFAULT_REMOTE_PYTHON)
@@ -414,6 +423,12 @@ def main():
 
     print("\n  [OK] Archivos copiados\n")
 
+    # ── 3.0. Subir .env.prod como .env en el servidor ────────────────────────
+    print("[3.0/4] Subiendo configuracion de produccion (.env.prod -> .env)...")
+    with SCPClient(ssh.get_transport()) as scp_env:
+        scp_env.put(str(env_prod_path), remote_path=f"{REMOTE}/.env")
+    print("  [OK] Configuracion de produccion subida\n")
+
     # Instalar dependencias en venv remoto y ejecutar migraciones.
     print("[3.1/4] Aplicando migraciones en servidor remoto...")
     remote_venv_python = f"{REMOTE}/{remote_venv}/bin/python"
@@ -433,6 +448,29 @@ def main():
         print("  [ERROR] Fallo aplicando migraciones en el servidor.")
         sys.exit(1)
     print("  [OK] Migraciones remotas aplicadas\n")
+
+    # ── 3.1.5. Verificar conexion a la base de datos ──────────────────────────
+    print("[3.1.5/4] Verificando conexion a la base de datos en servidor...")
+    _db_verify_script = (
+        "import sys; sys.path.insert(0, '.'); "
+        "from config import Config; "
+        "from urllib.parse import urlparse; "
+        "import pymysql; "
+        "u = urlparse(Config.SQLALCHEMY_DATABASE_URI); "
+        "c = pymysql.connect(host=u.hostname, port=u.port or 3306, "
+        "user=u.username, password=u.password, database=u.path.lstrip('/')); "
+        "c.close(); "
+        "print('  DB conectada: ' + u.path.lstrip('/'))"
+    )
+    _db_verify_cmd = (
+        f"cd {shlex.quote(REMOTE)} && "
+        f"{shlex.quote(remote_venv_python)} -c {shlex.quote(_db_verify_script)}"
+    )
+    if run(_db_verify_cmd) != 0:
+        print("  [ERROR] No se pudo verificar la conexion a la base de datos.")
+        print("          Revisa que .env.prod tenga DB_HOST, DB_USER, DB_PASSWORD y DB_NAME correctos.")
+        sys.exit(1)
+    print("  [OK] Base de datos accesible desde el servidor\n")
 
     # Validar e instalar unit file de systemd antes de reiniciar.
     print("[3.2/4] Instalando servicio systemd...")
