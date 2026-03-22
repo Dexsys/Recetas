@@ -383,6 +383,18 @@ def main():
             print(f"    (stderr) {err}")
         return status_code
 
+    def run_capture(cmd):
+        """Ejecuta comando remoto y retorna (codigo, stdout, stderr)."""
+        _, stdout, stderr = ssh.exec_command(cmd)
+        status_code = stdout.channel.recv_exit_status()
+        out = stdout.read().decode().strip()
+        err = stderr.read().decode().strip()
+        if out:
+            print(f"    {out}")
+        if err:
+            print(f"    (stderr) {err}")
+        return status_code, out, err
+
     def run_sudo(cmd):
         return run(f"echo {shlex.quote(password)} | sudo -S {cmd}")
 
@@ -444,9 +456,34 @@ def main():
     if run(f"cd {shlex.quote(REMOTE)} && {shlex.quote(remote_venv_python)} -m pip install -r requirements.txt") != 0:
         print("  [ERROR] Fallo instalando dependencias en el servidor.")
         sys.exit(1)
-    if run(f"cd {shlex.quote(REMOTE)} && FLASK_APP=app:create_app {shlex.quote(remote_venv_python)} -m flask db upgrade") != 0:
-        print("  [ERROR] Fallo aplicando migraciones en el servidor.")
-        sys.exit(1)
+    migration_cmd = (
+        f"cd {shlex.quote(REMOTE)} && "
+        f"FLASK_APP=app:create_app {shlex.quote(remote_venv_python)} -m flask db upgrade"
+    )
+    rc, out, err = run_capture(migration_cmd)
+    if rc != 0:
+        combined = f"{out}\n{err}".lower()
+        table_exists_signals = (
+            "already exists",
+            "table 'user' already exists",
+            "operationalerror: (1050",
+        )
+        if any(signal in combined for signal in table_exists_signals):
+            print("  [WARN] La base de datos ya tiene tablas, sincronizando Alembic con 'stamp head'...")
+            stamp_cmd = (
+                f"cd {shlex.quote(REMOTE)} && "
+                f"FLASK_APP=app:create_app {shlex.quote(remote_venv_python)} -m flask db stamp head"
+            )
+            if run(stamp_cmd) != 0:
+                print("  [ERROR] Fallo ejecutando 'flask db stamp head' en el servidor.")
+                sys.exit(1)
+            print("  [OK] Alembic sincronizado. Reintentando migraciones...")
+            if run(migration_cmd) != 0:
+                print("  [ERROR] Fallo aplicando migraciones tras 'stamp head'.")
+                sys.exit(1)
+        else:
+            print("  [ERROR] Fallo aplicando migraciones en el servidor.")
+            sys.exit(1)
     print("  [OK] Migraciones remotas aplicadas\n")
 
     # ── 3.1.5. Verificar conexion a la base de datos ──────────────────────────

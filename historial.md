@@ -5,15 +5,18 @@
 **Repositorio**: https://github.com/Dexsys/Recetas
 
 ---
-
-## [1.2026.0318] - 2026-03-18
 ## [1.2026.0321] - 2026-03-21
 
 ### Agregado
 - Script `setup_dev_db.py`: crea la base de datos de desarrollo `dev_sabor_familia` clonando el esquema de produccion.
 - Script `import_prod_sqlite.py`: descarga el SQLite del servidor via SSH/SCP y migra los datos a MariaDB `sabor_familia`.
+- Script `full_backup.py`: orquesta respaldo completo (backup DB, compresion de uploads y respaldo de codigo a GitHub en un solo flujo).
 - Archivo `.env.prod`: configuracion de produccion separada (no versionada), subida automaticamente al servidor en cada deploy.
 - Archivo `.env.example`: plantilla publica de referencia para configurar el entorno.
+
+### Corregido
+- `routes/recipes.py`: solucionado error 500 al crear/editar recetas por duplicado en `ingredient_price` (MariaDB 1062, `Duplicate entry ... for key 'name'`).
+- La auto-creacion de precios de ingredientes ahora valida existencia en BD en forma case-insensitive antes de insertar, evitando colisiones por mayusculas/minusculas.
 
 ### Tecnico
 - `config.py`: eliminado el fallback a SQLite. Ahora MariaDB es obligatorio. Si faltan credenciales, se lanza `EnvironmentError` con mensaje claro.

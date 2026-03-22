@@ -37,7 +37,7 @@ class User(UserMixin, db.Model):
             data = serializer.loads(token, salt='password-reset-salt', max_age=max_age)
         except (BadSignature, SignatureExpired):
             return None
-        return User.query.get(data.get('user_id'))
+        return db.session.get(User, data.get('user_id'))
 
 class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -119,7 +119,7 @@ class SiteStats(db.Model):
 
     @classmethod
     def increment_total_visits(cls):
-        stats = cls.query.get(1)
+        stats = db.session.get(cls, 1)
         if not stats:
             stats = cls(id=1, total_visits=0)
             db.session.add(stats)

@@ -8,6 +8,11 @@ Proyecto web en Flask para administrar recetas, usuarios, tecnicas y comentarios
 - Ultima actualizacion: 2026-03-21
 - Entorno recomendado: .venv
 
+## Correcciones recientes (2026-03-21)
+
+- Corregido error 500 al crear/editar recetas cuando un ingrediente ya existia en `ingredient_price` (`Duplicate entry ... for key 'name'`, MariaDB 1062).
+- La validacion de auto-registro de precios de ingredientes en backend ahora consulta existencia case-insensitive antes de insertar.
+
 ## Requisitos
 
 - Python 3.12+ (compatible con 3.14)
@@ -115,6 +120,14 @@ Con el entorno activo:
 - Backup:
 
   python backup_db.py backup
+
+- Respaldo completo (DB + uploads + GitHub):
+
+   python full_backup.py
+
+- Respaldo completo sin push a GitHub:
+
+   python full_backup.py --skip-github
 
 - Listar backups:
 

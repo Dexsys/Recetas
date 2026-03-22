@@ -18,6 +18,7 @@
 - [x] Script `import_prod_sqlite.py` para migrar datos SQLite del servidor a MariaDB.
 - [x] Reescribir `backup_db.py` para MariaDB (exporta .sql).
 - [x] `deploy_to_server.py` sube `.env.prod` como `.env` y verifica conexion DB.
+- [x] Corregir error 500 por duplicado en `ingredient_price` al crear/editar recetas (validacion case-insensitive previa al insert).
 - [ ] Ejecutar `python import_prod_sqlite.py` para importar datos SQLite del servidor (pendiente de ventana de mantenimiento).
 - [ ] Verificar en 192.168.0.89 que la app usa `sabor_familia` en MariaDB despues del proximo deploy.
 

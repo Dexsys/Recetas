@@ -105,13 +105,17 @@ def hacer_backup():
             cols = [row[0] for row in cursor.fetchall()]
             cols_str = ", ".join(f"`{c}`" for c in cols)
             row_strs = []
+
+            # Usa el escapado del conector activo para compatibilidad entre versiones de PyMySQL.
+            def _sql_literal(value):
+                if value is None:
+                    return "NULL"
+                if isinstance(value, (int, float)):
+                    return str(value)
+                return conn.escape(str(value))
+
             for row in rows:
-                vals = ", ".join(
-                    "NULL" if v is None
-                    else str(v) if isinstance(v, (int, float))
-                    else "'" + pymysql.escape_string(str(v)) + "'"
-                    for v in row
-                )
+                vals = ", ".join(_sql_literal(v) for v in row)
                 row_strs.append(f"  ({vals})")
             lines.append(f"INSERT INTO `{table}` ({cols_str}) VALUES")
             lines.append(",\n".join(row_strs) + ";")

@@ -257,7 +257,7 @@ def create():
         ingredient_amounts = request.form.getlist('ingredient_amount[]')
         ingredient_units = request.form.getlist('ingredient_unit[]')
 
-        existing_price_names = {p.name.lower() for p in IngredientPrice.query.all()}
+        seen_price_names = set()  # evita duplicados dentro del mismo request
         for i in range(len(ingredient_names)):
             name = ingredient_names[i].strip()
             if name != '':
@@ -269,16 +269,20 @@ def create():
                     recipe=recipe
                 )
                 db.session.add(ing)
-                # Auto-registrar en IngredientPrice si no existe aún
-                if name.lower() not in existing_price_names:
-                    db.session.add(IngredientPrice(
-                        name=name,
-                        price=0.0,
-                        price_per_kg=0.0,
-                        commercial_qty=1.0,
-                        commercial_unit='kg'
-                    ))
-                    existing_price_names.add(name.lower())
+                # Auto-registrar en IngredientPrice si no existe (case-insensitive)
+                name_key = name.lower()
+                if name_key not in seen_price_names:
+                    seen_price_names.add(name_key)
+                    if not IngredientPrice.query.filter(
+                        db.func.lower(IngredientPrice.name) == name_key
+                    ).first():
+                        db.session.add(IngredientPrice(
+                            name=name,
+                            price=0.0,
+                            price_per_kg=0.0,
+                            commercial_qty=1.0,
+                            commercial_unit='kg'
+                        ))
         
         db.session.commit()
         
@@ -446,7 +450,7 @@ def edit(recipe_id):
         delete_ids = request.form.getlist('delete_image_id[]')
         for img_id in delete_ids:
             try:
-                img = RecipeImage.query.get(int(img_id))
+                img = db.session.get(RecipeImage, int(img_id))
                 if img and img.recipe_id == recipe.id:
                     db.session.delete(img)
             except (ValueError, TypeError):
@@ -475,7 +479,7 @@ def edit(recipe_id):
         units = request.form.getlist('ingredient_unit[]')
         names = request.form.getlist('ingredient_name[]')
         
-        existing_price_names = {p.name.lower() for p in IngredientPrice.query.all()}
+        seen_price_names = set()  # evita duplicados dentro del mismo request
         for amount, unit, name in zip(amounts, units, names):
             name = name.strip()
             if name:
@@ -485,16 +489,20 @@ def edit(recipe_id):
                     amt = None
                 ing = Ingredient(amount=amt, unit=unit, name=name, recipe=recipe)
                 db.session.add(ing)
-                # Auto-registrar en IngredientPrice si no existe aún
-                if name.lower() not in existing_price_names:
-                    db.session.add(IngredientPrice(
-                        name=name,
-                        price=0.0,
-                        price_per_kg=0.0,
-                        commercial_qty=1.0,
-                        commercial_unit='kg'
-                    ))
-                    existing_price_names.add(name.lower())
+                # Auto-registrar en IngredientPrice si no existe (case-insensitive)
+                name_key = name.lower()
+                if name_key not in seen_price_names:
+                    seen_price_names.add(name_key)
+                    if not IngredientPrice.query.filter(
+                        db.func.lower(IngredientPrice.name) == name_key
+                    ).first():
+                        db.session.add(IngredientPrice(
+                            name=name,
+                            price=0.0,
+                            price_per_kg=0.0,
+                            commercial_qty=1.0,
+                            commercial_unit='kg'
+                        ))
         
         db.session.commit()
         flash('Receta actualizada exitosamente.', 'success')
