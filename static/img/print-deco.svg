@@ -1,0 +1,226 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" width="900" height="1200">
+  <defs>
+    <style>
+      .ic { fill: none; stroke: #c49a6c; stroke-linecap: round; stroke-linejoin: round; }
+      .ic-fill { fill: #c49a6c; opacity: 0.55; }
+      .ic-light { fill: none; stroke: #c49a6c; stroke-linecap: round; stroke-linejoin: round; opacity: 0.55; }
+    </style>
+  </defs>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- ESQUINA SUPERIOR IZQUIERDA – Batidor de mano      -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <g transform="translate(18, 18) rotate(-25) scale(1.1)" opacity="0.45">
+    <!-- mango del batidor -->
+    <line class="ic" x1="55" y1="10" x2="38" y2="75" stroke-width="5"/>
+    <!-- aros del globo -->
+    <ellipse class="ic" cx="27" cy="94" rx="14" ry="21" stroke-width="3.5"/>
+    <line class="ic" x1="27" y1="73" x2="27" y2="115" stroke-width="2.5"/>
+    <line class="ic" x1="13" y1="80" x2="27" y2="94" stroke-width="2"/>
+    <line class="ic" x1="41" y1="80" x2="27" y2="94" stroke-width="2"/>
+    <line class="ic" x1="13" y1="108" x2="27" y2="94" stroke-width="2"/>
+    <line class="ic" x1="41" y1="108" x2="27" y2="94" stroke-width="2"/>
+  </g>
+
+  <!-- ESQUINA SUPERIOR IZQUIERDA – Ramita de romero / hoja -->
+  <g transform="translate(72, 8) rotate(10)" opacity="0.38">
+    <line class="ic" x1="0" y1="80" x2="0" y2="0" stroke-width="2.5" stroke="#c49a6c"/>
+    <ellipse class="ic" cx="-8" cy="20" rx="5" ry="13" transform="rotate(-30 -8 20)" stroke-width="2"/>
+    <ellipse class="ic" cx="8"  cy="38" rx="5" ry="13" transform="rotate(25 8 38)"  stroke-width="2"/>
+    <ellipse class="ic" cx="-7" cy="56" rx="5" ry="12" transform="rotate(-20 -7 56)" stroke-width="2"/>
+  </g>
+
+  <!-- ESQUINA SUPERIOR IZQUIERDA – Bol de mezcla pequeño -->
+  <g transform="translate(8, 110)" opacity="0.42">
+    <path class="ic" d="M5,8 Q30,-12 55,8 L48,38 Q30,52 12,38 Z" stroke-width="3"/>
+    <ellipse class="ic" cx="30" cy="8" rx="25" ry="7" stroke-width="2.5"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- ESQUINA SUPERIOR DERECHA – Tarro de mermelada     -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <g transform="translate(820, 22)" opacity="0.45">
+    <!-- tapa -->
+    <ellipse class="ic" cx="28" cy="12" rx="24" ry="9" stroke-width="3.5"/>
+    <rect class="ic" x="4" y="12" width="48" height="52" rx="6" stroke-width="3.5"/>
+    <!-- fruta dentro -->
+    <ellipse class="ic-fill" cx="28" cy="38" rx="12" ry="10" opacity="0.3"/>
+    <!-- etiqueta -->
+    <rect class="ic" x="10" y="40" width="36" height="18" rx="3" stroke-width="2"/>
+    <line class="ic" x1="14" y1="46" x2="42" y2="46" stroke-width="1.5"/>
+    <line class="ic" x1="14" y1="52" x2="38" y2="52" stroke-width="1.5"/>
+    <!-- tapa detalle -->
+    <rect class="ic" x="11" y="7" width="34" height="10" rx="3" stroke-width="2"/>
+  </g>
+
+  <!-- ESQUINA SUPERIOR DERECHA – Naranja cortada -->
+  <g transform="translate(838, 108)" opacity="0.4">
+    <circle class="ic" cx="28" cy="28" r="25" stroke-width="3.5"/>
+    <!-- gajos -->
+    <line class="ic" x1="28" y1="3"  x2="28" y2="53" stroke-width="2"/>
+    <line class="ic" x1="3"  y1="28" x2="53" y2="28" stroke-width="2"/>
+    <line class="ic" x1="10" y1="10" x2="46" y2="46" stroke-width="2"/>
+    <line class="ic" x1="46" y1="10" x2="10" y2="46" stroke-width="2"/>
+    <!-- borde interior -->
+    <circle class="ic" cx="28" cy="28" r="16" stroke-width="1.5"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- CENTRO SUPERIOR – Libro de recetas abierto        -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <g transform="translate(360, 14)" opacity="0.38">
+    <!-- portada izq -->
+    <path class="ic" d="M90,8 Q50,-4 10,5 L10,65 Q50,55 90,65 Z" stroke-width="3.5"/>
+    <!-- portada der -->
+    <path class="ic" d="M90,8 Q130,-4 170,5 L170,65 Q130,55 90,65 Z" stroke-width="3.5"/>
+    <!-- lomo -->
+    <line class="ic" x1="90" y1="8" x2="90" y2="65" stroke-width="3"/>
+    <!-- líneas de texto izq -->
+    <line class="ic" x1="22" y1="22" x2="78" y2="18" stroke-width="1.8"/>
+    <line class="ic" x1="22" y1="30" x2="78" y2="26" stroke-width="1.8"/>
+    <line class="ic" x1="22" y1="38" x2="78" y2="34" stroke-width="1.8"/>
+    <!-- líneas de texto der -->
+    <line class="ic" x1="102" y1="18" x2="158" y2="22" stroke-width="1.8"/>
+    <line class="ic" x1="102" y1="26" x2="158" y2="30" stroke-width="1.8"/>
+    <line class="ic" x1="102" y1="34" x2="158" y2="38" stroke-width="1.8"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- MARGEN IZQUIERDO MEDIO – Especias / canela        -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <g transform="translate(14, 420) rotate(-15)" opacity="0.38">
+    <!-- rama de canela 1 -->
+    <rect class="ic" x="0"  y="0"  width="8" height="55" rx="4" stroke-width="2.5"/>
+    <!-- rama de canela 2 -->
+    <rect class="ic" x="13" y="8"  width="8" height="50" rx="4" stroke-width="2.5"/>
+    <!-- anís estrellado -->
+    <g transform="translate(35, 25)">
+      <circle class="ic" cx="0" cy="0" r="12" stroke-width="2"/>
+      <line class="ic" x1="0" y1="-12" x2="0" y2="12" stroke-width="1.5"/>
+      <line class="ic" x1="-12" y1="0" x2="12" y2="0" stroke-width="1.5"/>
+      <line class="ic" x1="-8" y1="-8" x2="8" y2="8" stroke-width="1.5"/>
+      <line class="ic" x1="8" y1="-8" x2="-8" y2="8" stroke-width="1.5"/>
+      <circle class="ic-fill" cx="0" cy="0" r="4" opacity="0.4"/>
+    </g>
+  </g>
+
+  <!-- MARGEN IZQUIERDO MEDIO – Tetera / jarra -->
+  <g transform="translate(5, 530)" opacity="0.38">
+    <!-- cuerpo -->
+    <ellipse class="ic" cx="38" cy="50" rx="33" ry="40" stroke-width="3.5"/>
+    <!-- tapa -->
+    <ellipse class="ic" cx="38" cy="14" rx="20" ry="7" stroke-width="3"/>
+    <!-- pomo -->
+    <circle class="ic" cx="38" cy="7" r="5" stroke-width="2.5"/>
+    <!-- pitorro -->
+    <path class="ic" d="M71,38 Q95,20 88,8" stroke-width="3" fill="none"/>
+    <ellipse class="ic" cx="89" cy="7" rx="5" ry="3" stroke-width="2"/>
+    <!-- asa -->
+    <path class="ic" d="M5,35 Q-18,50 5,66" stroke-width="3" fill="none"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- MARGEN DERECHO MEDIO – Rodillo de pastelería      -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <g transform="translate(845, 380) rotate(20)" opacity="0.4">
+    <!-- mango izq -->
+    <rect class="ic" x="-18" y="12" width="14" height="36" rx="6" stroke-width="3"/>
+    <!-- cilindro -->
+    <rect class="ic" x="-4" y="5" width="68" height="50" rx="8" stroke-width="3.5"/>
+    <!-- líneas decorativas del rodillo -->
+    <line class="ic" x1="10" y1="5" x2="10" y2="55" stroke-width="1.5"/>
+    <line class="ic" x1="22" y1="5" x2="22" y2="55" stroke-width="1.5"/>
+    <line class="ic" x1="34" y1="5" x2="34" y2="55" stroke-width="1.5"/>
+    <line class="ic" x1="46" y1="5" x2="46" y2="55" stroke-width="1.5"/>
+    <!-- mango der -->
+    <rect class="ic" x="64" y="12" width="14" height="36" rx="6" stroke-width="3"/>
+  </g>
+
+  <!-- MARGEN DERECHO MEDIO – Tarro cuadrado con tapa -->
+  <g transform="translate(832, 490)" opacity="0.38">
+    <rect class="ic" x="5"  y="18" width="52" height="62" rx="5" stroke-width="3.5"/>
+    <rect class="ic" x="0"  y="10" width="62" height="16" rx="5" stroke-width="3"/>
+    <!-- lazo encima -->
+    <path class="ic" d="M20,10 Q31,-6 42,10" stroke-width="2.5" fill="none"/>
+    <!-- pepinos dentro (siluetas) -->
+    <ellipse class="ic" cx="22" cy="52" rx="8" ry="16" stroke-width="2" transform="rotate(-15 22 52)"/>
+    <ellipse class="ic" cx="40" cy="48" rx="8" ry="16" stroke-width="2" transform="rotate(10 40 48)"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- ESQUINA INFERIOR IZQUIERDA – Galletas             -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <g transform="translate(10, 1060)" opacity="0.42">
+    <!-- galleta redonda grande -->
+    <circle class="ic" cx="38" cy="38" r="32" stroke-width="3.5"/>
+    <circle class="ic" cx="28" cy="28" r="4" stroke-width="1.5"/>
+    <circle class="ic" cx="44" cy="22" r="3" stroke-width="1.5"/>
+    <circle class="ic" cx="50" cy="40" r="4" stroke-width="1.5"/>
+    <circle class="ic" cx="32" cy="50" r="3" stroke-width="1.5"/>
+    <!-- galleta pequeña encima-der -->
+    <circle class="ic" cx="72" cy="18" r="18" stroke-width="2.5"/>
+    <circle class="ic" cx="68" cy="14" r="2.5" stroke-width="1.5"/>
+    <circle class="ic" cx="78" cy="22" r="2.5" stroke-width="1.5"/>
+  </g>
+
+  <!-- ESQUINA INFERIOR IZQUIERDA – Garrafa/jarra de jugo -->
+  <g transform="translate(8, 1120)" opacity="0.38">
+    <path class="ic" d="M12,0 L52,0 L58,70 Q35,82 6,70 Z" stroke-width="3.5"/>
+    <!-- asa -->
+    <path class="ic" d="M52,10 Q72,25 52,50" stroke-width="3" fill="none"/>
+    <!-- líquido interior -->
+    <line class="ic" x1="10" y1="48" x2="55" y2="48" stroke-width="1.8"/>
+    <!-- burbuja 1 -->
+    <circle class="ic" cx="22" cy="35" r="4" stroke-width="1.5"/>
+    <!-- burbuja 2 -->
+    <circle class="ic" cx="36" cy="28" r="3" stroke-width="1.5"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- ESQUINA INFERIOR DERECHA – Pan de miel            -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <g transform="translate(818, 1060)" opacity="0.42">
+    <!-- cuerpo del pan -->
+    <path class="ic" d="M5,38 Q30,-8 72,38 L68,75 Q37,88 10,75 Z" stroke-width="3.5"/>
+    <!-- cúpula -->
+    <path class="ic" d="M18,38 Q37,12 60,38" stroke-width="2.5"/>
+    <!-- estrella de anís decorativa -->
+    <g transform="translate(38, 55)">
+      <line class="ic" x1="0" y1="-9" x2="0" y2="9" stroke-width="1.5"/>
+      <line class="ic" x1="-9" y1="0" x2="9" y2="0" stroke-width="1.5"/>
+      <line class="ic" x1="-6" y1="-6" x2="6" y2="6" stroke-width="1.5"/>
+      <line class="ic" x1="6" y1="-6" x2="-6" y2="6" stroke-width="1.5"/>
+      <circle class="ic-fill" cx="0" cy="0" r="3" opacity="0.5"/>
+    </g>
+    <!-- semillas sesamo -->
+    <ellipse class="ic-fill" cx="22" cy="42" rx="3" ry="2" transform="rotate(20 22 42)" opacity="0.5"/>
+    <ellipse class="ic-fill" cx="54" cy="40" rx="3" ry="2" transform="rotate(-15 54 40)" opacity="0.5"/>
+    <ellipse class="ic-fill" cx="38" cy="36" rx="3" ry="2" opacity="0.5"/>
+  </g>
+
+  <!-- ESQUINA INFERIOR DERECHA – Frutos: frambuesas -->
+  <g transform="translate(840, 1138)" opacity="0.42">
+    <circle class="ic" cx="12" cy="20" r="10" stroke-width="3"/>
+    <circle class="ic" cx="30" cy="16" r="10" stroke-width="3"/>
+    <circle class="ic" cx="22" cy="36" r="10" stroke-width="3"/>
+    <!-- puntos frambuesa -->
+    <circle class="ic-fill" cx="12" cy="20" r="3" opacity="0.4"/>
+    <circle class="ic-fill" cx="30" cy="16" r="3" opacity="0.4"/>
+    <circle class="ic-fill" cx="22" cy="36" r="3" opacity="0.4"/>
+    <!-- tallo -->
+    <path class="ic" d="M21,6 Q22,0 26,0" stroke-width="2" fill="none"/>
+  </g>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- CENTRO INFERIOR – Divisor decorativo con hojas    -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <g transform="translate(190, 1168)" opacity="0.35">
+    <line class="ic" x1="0"   y1="16" x2="200" y2="16" stroke-width="1.5"/>
+    <line class="ic" x1="320" y1="16" x2="520" y2="16" stroke-width="1.5"/>
+    <!-- bol central decorativo -->
+    <g transform="translate(210, 0)">
+      <path class="ic" d="M10,2 Q55,-10 100,2 L90,30 Q55,42 20,30 Z" stroke-width="2.5"/>
+      <ellipse class="ic" cx="55" cy="2" rx="45" ry="12" stroke-width="2"/>
+    </g>
+  </g>
+</svg>

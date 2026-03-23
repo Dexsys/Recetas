@@ -184,6 +184,10 @@ def index():
 @bp.route('/create', methods=['GET', 'POST'])
 @login_required
 def create():
+    if current_user.role != 'admin' and not current_user.is_approved:
+        flash('Tu cuenta está pendiente de aprobación. Solo puedes crear recetas cuando un administrador la apruebe.', 'warning')
+        return redirect(url_for('main.index'))
+
     if request.method == 'POST':
         title = request.form.get('title')
         category = request.form.get('category')

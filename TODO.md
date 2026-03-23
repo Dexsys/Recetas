@@ -1,11 +1,11 @@
 # TODO - Mejoras de Seguridad y Robustez (Recetas)
 
 ## Control de respaldo
-- Ultima revision prebackup: 2026-03-21
+- Ultima revision prebackup: 2026-03-22
 
 
 ## Control de despliegue
-- Ultima revision predeploy: 2026-03-21
+- Ultima revision predeploy: 2026-03-22
 
 
 ## Objetivo de negocio

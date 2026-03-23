@@ -50,41 +50,34 @@ def _build_smtp_ssl_context():
 def _looks_like_gmail_app_password(password):
     if not password:
         return False
-    compact = ''.join(password.split())
+    compact = ''.join(ch for ch in password if ch.isalnum())
     return len(compact) == 16 and compact.isalnum()
 
 
-def send_reset_password_email(user):
-    token = user.get_reset_password_token()
-    reset_link = url_for('auth.reset_password', token=token, _external=True)
+def _normalize_gmail_app_password(password):
+    return ''.join(ch for ch in (password or '') if ch.isalnum())
 
-    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+
+def _send_email_message(msg):
     smtp_server = current_app.config.get('MAIL_SERVER')
+    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
 
     if not smtp_server or not sender:
-        current_app.logger.warning('SMTP no configurado. Enlace de recuperación para %s: %s', user.email, reset_link)
+        current_app.logger.warning('SMTP no configurado. No se pudo enviar correo: %s', msg.get('Subject'))
         return False
-
-    msg = EmailMessage()
-    msg['Subject'] = 'Recuperación de contraseña - Recetas'
-    msg['From'] = sender
-    msg['To'] = user.email
-    msg.set_content(
-        'Hola,\n\n'
-        'Recibimos una solicitud para restablecer tu contraseña.\n'
-        f'Usa este enlace (válido por 1 hora):\n{reset_link}\n\n'
-        'Si no solicitaste este cambio, puedes ignorar este mensaje.\n'
-    )
 
     port = current_app.config.get('MAIL_PORT', 587)
     username = current_app.config.get('MAIL_USERNAME')
     password = current_app.config.get('MAIL_PASSWORD')
     use_ssl = current_app.config.get('MAIL_USE_SSL', False)
     use_tls = current_app.config.get('MAIL_USE_TLS', True)
-
     timeout = current_app.config.get('MAIL_TIMEOUT', 15)
 
     try:
+        login_password = password
+        if smtp_server == 'smtp.gmail.com' and password:
+            login_password = _normalize_gmail_app_password(password)
+
         if smtp_server == 'smtp.gmail.com' and username and password and not _looks_like_gmail_app_password(password):
             current_app.logger.warning(
                 'Configuracion Gmail detectada pero MAIL_PASSWORD no parece App Password de 16 caracteres.'
@@ -97,21 +90,114 @@ def send_reset_password_email(user):
                 timeout=timeout,
                 context=_build_smtp_ssl_context(),
             ) as server:
-                if username and password:
-                    server.login(username, password)
+                if username and login_password:
+                    server.login(username, login_password)
                 server.send_message(msg)
         else:
             with smtplib.SMTP(smtp_server, port, timeout=timeout) as server:
                 if use_tls:
                     server.starttls(context=_build_smtp_ssl_context())
-                if username and password:
-                    server.login(username, password)
+                if username and login_password:
+                    server.login(username, login_password)
                 server.send_message(msg)
         return True
-    except Exception:
-        current_app.logger.exception('Error enviando correo de recuperación para %s', user.email)
-        current_app.logger.warning('Enlace de recuperación para %s: %s', user.email, reset_link)
+    except smtplib.SMTPAuthenticationError as exc:
+        current_app.logger.error(
+            'Autenticacion SMTP fallida para %s. Usa App Password de Gmail (16 caracteres) en MAIL_PASSWORD. Detalle: %s',
+            current_app.config.get('MAIL_USERNAME'),
+            exc,
+        )
         return False
+    except Exception:
+        current_app.logger.exception('Error enviando correo: %s', msg.get('Subject'))
+        return False
+
+
+def send_reset_password_email(user):
+    token = user.get_reset_password_token()
+    reset_link = url_for('auth.reset_password', token=token, _external=True)
+
+    if not current_app.config.get('MAIL_SERVER') or not current_app.config.get('MAIL_DEFAULT_SENDER'):
+        current_app.logger.warning('SMTP no configurado. Enlace de recuperación para %s: %s', user.email, reset_link)
+        return False
+
+    msg = EmailMessage()
+    msg['Subject'] = 'Recuperación de contraseña - Recetas'
+    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+    msg['From'] = sender
+    msg['To'] = user.email
+    msg.set_content(
+        'Hola,\n\n'
+        'Recibimos una solicitud para restablecer tu contraseña.\n'
+        f'Usa este enlace (válido por 1 hora):\n{reset_link}\n\n'
+        'Si no solicitaste este cambio, puedes ignorar este mensaje.\n'
+    )
+
+    sent = _send_email_message(msg)
+    if not sent:
+        current_app.logger.warning('No se pudo enviar correo de recuperación para %s', user.email)
+        current_app.logger.warning('Enlace de recuperación para %s: %s', user.email, reset_link)
+    return sent
+
+
+def send_new_registration_email_to_admin(user):
+    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+    target = current_app.config.get('REGISTRATION_ALERT_EMAIL')
+    if not sender or not target:
+        current_app.logger.warning('No se envio aviso de registro: falta sender o REGISTRATION_ALERT_EMAIL')
+        return False
+
+    approve_link = url_for('admin.approve_user', user_id=user.id, _external=True)
+    reject_link = url_for('admin.reject_user', user_id=user.id, _external=True)
+
+    msg = EmailMessage()
+    msg['Subject'] = f'Nuevo usuario pendiente de aprobacion: {user.username}'
+    msg['From'] = sender
+    msg['To'] = target
+    msg.set_content(
+        'Se registró un nuevo usuario en Sabor & Familia.\n\n'
+        f'Usuario: {user.username}\n'
+        f'Email: {user.email}\n\n'
+        f'Aprobar: {approve_link}\n'
+        f'Rechazar y eliminar: {reject_link}\n\n'
+        'Nota: si el enlace pide login, ingresa con tu cuenta admin y vuelve a abrirlo.'
+    )
+    return _send_email_message(msg)
+
+
+def send_registration_approved_email(user):
+    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+    if not sender:
+        return False
+
+    msg = EmailMessage()
+    msg['Subject'] = 'Tu cuenta fue aprobada - Sabor & Familia'
+    msg['From'] = sender
+    msg['To'] = user.email
+    msg.set_content(
+        f'Hola {user.username},\n\n'
+        'Tu registro fue aprobado.\n'
+        'Desde ahora puedes crear nuevas recetas en la plataforma.\n\n'
+        f'Ingresa aqui: {url_for("auth.login", _external=True)}\n'
+    )
+    return _send_email_message(msg)
+
+
+def send_registration_rejected_email(user):
+    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
+    if not sender:
+        return False
+
+    msg = EmailMessage()
+    msg['Subject'] = 'Inscripcion no aprobada - Sabor & Familia'
+    msg['From'] = sender
+    msg['To'] = user.email
+    msg.set_content(
+        f'Hola {user.username},\n\n'
+        'Tu solicitud de registro no fue aprobada y tu cuenta fue eliminada.\n'
+        'Si crees que se trata de un error, puedes volver a registrarte o contactar al administrador.\n'
+    )
+    return _send_email_message(msg)
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -151,13 +237,19 @@ def register():
             return redirect(url_for('auth.register'))
 
         is_first = User.query.count() == 0
-        role = 'admin' if is_first else 'invitado'
+        role = 'admin' if is_first else 'usuario'
+        is_approved = is_first
 
-        user = User(username=form.username.data, email=email, role=role)
+        user = User(username=form.username.data, email=email, role=role, is_approved=is_approved)
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('¡Felicidades, te has registrado exitosamente!', 'success')
+
+        if not is_first:
+            send_new_registration_email_to_admin(user)
+            flash('Registro enviado. Un administrador debe aprobar tu cuenta antes de crear recetas.', 'info')
+        else:
+            flash('¡Felicidades, te has registrado exitosamente!', 'success')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', title='Registrarse', form=form)
 

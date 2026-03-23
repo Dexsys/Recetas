@@ -5,6 +5,36 @@
     <h2 class="handwritten">Panel de Administración</h2>
 
     <div class="admin-section">
+        <h3>Usuarios Pendientes de Aprobación</h3>
+        {% if pending_users %}
+        <table class="admin-table">
+            <tr>
+                <th>ID</th>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+            {% for user in pending_users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>Pendiente</td>
+                <td>
+                    <a href="{{ url_for('admin.approve_user', user_id=user.id) }}" class="btn-sm">Aprobar</a>
+                    <a href="{{ url_for('admin.reject_user', user_id=user.id) }}" class="btn-sm" style="background-color:#d32f2f;"
+                        onclick="return confirm('¿Rechazar registro de {{ user.username }} y eliminar su cuenta?')">Rechazar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p>No hay usuarios pendientes.</p>
+        {% endif %}
+    </div>
+
+    <div class="admin-section">
         <h3>Usuarios</h3>
         <table class="admin-table">
             <tr>
@@ -12,6 +42,7 @@
                 <th>Usuario</th>
                 <th>Email</th>
                 <th>Rol</th>
+                <th>Aprobado</th>
                 <th>Acciones</th>
             </tr>
             {% for user in users %}
@@ -20,11 +51,12 @@
                 <td>{{ user.username }}</td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.role }}</td>
+                <td>{{ 'Sí' if user.is_approved else 'No' }}</td>
                 <td>
                     {% if user.id != 1 %}
                     <a href="{{ url_for('admin.change_role', user_id=user.id, new_role='admin') }}">Admin</a> |
                     <a href="{{ url_for('admin.change_role', user_id=user.id, new_role='colaborador') }}">Colab</a> |
-                    <a href="{{ url_for('admin.change_role', user_id=user.id, new_role='invitado') }}">Invitado</a>
+                    <a href="{{ url_for('admin.change_role', user_id=user.id, new_role='usuario') }}">Usuario</a>
                     {% endif %}
                 </td>
             </tr>

@@ -90,3 +90,6 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER") or os.environ.get(
         "MAIL_USERNAME"
     )
+
+    # Destinatario administrativo para aprobar/rechazar nuevos registros.
+    REGISTRATION_ALERT_EMAIL = os.environ.get("REGISTRATION_ALERT_EMAIL") or "dexsys@gmail.com"

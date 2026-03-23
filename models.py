@@ -11,7 +11,8 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), index=True, unique=True, nullable=False)
     email = db.Column(db.String(120), index=True, unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
-    role = db.Column(db.String(20), default='invitado') # admin, colaborador, invitado
+    role = db.Column(db.String(20), default='usuario') # admin, colaborador, usuario
+    is_approved = db.Column(db.Boolean, nullable=False, default=False)
     recipes = db.relationship('Recipe', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
 

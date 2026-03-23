@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="title desc">
+  <title id="title">Logo Sabor y Familia</title>
+  <desc id="desc">Libro de recetas abierto con frutas y frascos, estilo artesanal cálido.</desc>
+
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#fff3df"/>
+      <stop offset="100%" stop-color="#f2d4ac"/>
+    </radialGradient>
+    <linearGradient id="page" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#fff9ef"/>
+      <stop offset="100%" stop-color="#f2e4ce"/>
+    </linearGradient>
+    <linearGradient id="cover" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#8d2f3a"/>
+      <stop offset="100%" stop-color="#66222a"/>
+    </linearGradient>
+    <style>
+      .stroke { stroke: #5b2f25; stroke-linecap: round; stroke-linejoin: round; }
+      .warm { fill: #d47a43; }
+      .olive { fill: #8a9448; }
+      .berry { fill: #b5404a; }
+      .honey { fill: #dca64d; }
+    </style>
+  </defs>
+
+  <circle cx="256" cy="256" r="244" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="232" fill="none" stroke="#c58f5c" stroke-width="10" opacity="0.45"/>
+
+  <!-- hojas y remolinos decorativos -->
+  <g opacity="0.75">
+    <path class="stroke" d="M98 214c24-22 56-32 88-24" stroke-width="8" fill="none"/>
+    <path class="stroke" d="M412 214c-24-22-56-32-88-24" stroke-width="8" fill="none"/>
+    <path class="stroke" d="M113 330c26 14 60 16 92 7" stroke-width="8" fill="none"/>
+    <path class="stroke" d="M399 330c-26 14-60 16-92 7" stroke-width="8" fill="none"/>
+  </g>
+
+  <g transform="translate(116 128)">
+    <!-- plato base -->
+    <ellipse cx="140" cy="238" rx="142" ry="38" fill="#efd0a7"/>
+
+    <!-- libro abierto -->
+    <path d="M140 38C99 22 52 24 20 40v170c31-15 79-19 120-2z" fill="url(#page)" class="stroke" stroke-width="5"/>
+    <path d="M140 38c41-16 88-14 120 2v170c-31-15-79-19-120-2z" fill="url(#page)" class="stroke" stroke-width="5"/>
+    <line x1="140" y1="38" x2="140" y2="208" class="stroke" stroke-width="4"/>
+
+    <!-- cubiertas laterales -->
+    <path d="M20 40c8-16 20-26 38-30 18-4 38 0 58 10l-6 20c-19-9-35-11-49-8-14 3-24 10-31 20z" fill="url(#cover)"/>
+    <path d="M260 40c-8-16-20-26-38-30-18-4-38 0-58 10l6 20c19-9 35-11 49-8 14 3 24 10 31 20z" fill="url(#cover)"/>
+
+    <!-- texto en páginas -->
+    <g stroke="#9c8467" stroke-width="2" opacity="0.75">
+      <line x1="38" y1="74" x2="116" y2="66"/>
+      <line x1="38" y1="92" x2="120" y2="86"/>
+      <line x1="38" y1="110" x2="116" y2="104"/>
+      <line x1="162" y1="66" x2="240" y2="74"/>
+      <line x1="158" y1="86" x2="240" y2="94"/>
+      <line x1="164" y1="104" x2="240" y2="112"/>
+    </g>
+
+    <!-- sello circular -->
+    <circle cx="140" cy="132" r="23" fill="#f1d8b5" class="stroke" stroke-width="3"/>
+    <path d="M132 132l7 8 12-16" fill="none" class="stroke" stroke-width="3"/>
+
+    <!-- íconos alrededor -->
+    <g>
+      <circle cx="18" cy="188" r="24" class="warm"/>
+      <circle cx="34" cy="176" r="9" fill="#f4d6ac"/>
+
+      <circle cx="268" cy="186" r="24" class="berry"/>
+      <circle cx="256" cy="176" r="9" fill="#ffd5da"/>
+
+      <ellipse cx="52" cy="228" rx="30" ry="18" class="honey"/>
+      <ellipse cx="228" cy="228" rx="30" ry="18" class="olive"/>
+    </g>
+
+    <!-- frasco -->
+    <g transform="translate(238 96)">
+      <ellipse cx="18" cy="8" rx="16" ry="7" fill="#f1d7b0" class="stroke" stroke-width="3"/>
+      <rect x="2" y="8" width="32" height="44" rx="5" fill="#b5404a" class="stroke" stroke-width="3"/>
+      <rect x="6" y="24" width="24" height="12" rx="3" fill="#f8ebd4" opacity="0.75"/>
+    </g>
+  </g>
+
+  <!-- leyenda circular -->
+  <text x="256" y="400" text-anchor="middle" font-size="36" font-family="Georgia, serif" fill="#5e2a25" font-weight="700">Sabor &amp; Familia</text>
+</svg>

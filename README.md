@@ -4,8 +4,8 @@ Proyecto web en Flask para administrar recetas, usuarios, tecnicas y comentarios
 
 ## Estado
 
-- Version: 1.2026.0321
-- Ultima actualizacion: 2026-03-21
+- Version: 1.2026.0322
+- Ultima actualizacion: 2026-03-22
 - Entorno recomendado: .venv
 
 ## Correcciones recientes (2026-03-21)
