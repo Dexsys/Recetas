@@ -78,7 +78,7 @@ def create_app(config_class=Config):
     from models import User
     @login_manager.user_loader
     def load_user(id):
-        return User.query.get(int(id))
+        return db.session.get(User, int(id))
 
     @app.before_request
     def track_site_visits():
@@ -93,7 +93,7 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_site_stats():
         from models import SiteStats
-        stats = SiteStats.query.get(1)
+        stats = db.session.get(SiteStats, 1)
         return {
             'site_total_visits': stats.total_visits if stats else 0,
             'app_version': get_app_version(),

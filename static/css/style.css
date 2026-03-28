@@ -6,10 +6,14 @@
     --header-text: #fff;
     --header-bg-dev-start: #1f5fbf;
     --header-bg-dev-end: #153a73;
+    --mono-font: 'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
 body {
     font-family: 'Inter', sans-serif;
+    background:
+        linear-gradient(rgba(252, 248, 242, 0.78), rgba(252, 248, 242, 0.78)),
+        url('../img/Fondo2.png') center / cover fixed;
     background-color: var(--bg-color);
     color: var(--text-color);
     margin: 0;
@@ -205,6 +209,39 @@ footer {
     box-sizing: border-box;
 }
 
+.password-field {
+    position: relative;
+    display: block;
+}
+
+.password-field .password-input {
+    padding-right: 2.75rem;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0.55rem;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    color: #7a6a62;
+    padding: 0.2rem;
+}
+
+.password-toggle:hover {
+    color: var(--accent-color);
+}
+
+.password-toggle:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
 .btn-primary {
     background-color: var(--accent-color);
     color: white;
@@ -271,6 +308,33 @@ footer {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
+}
+
+.recipe-card {
+    transition: transform 0.2s ease, box-shadow 0.25s ease;
+}
+
+.recipe-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(40, 26, 19, 0.15);
+}
+
+.recipe-card-title {
+    line-height: 1.15;
+    min-height: calc(1.15em * 2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+table,
+.admin-table,
+.admin-table th,
+.admin-table td {
+    font-family: var(--mono-font);
+    letter-spacing: 0.01em;
+    font-size: 0.93rem;
 }
 
 .admin-table th,
@@ -571,6 +635,28 @@ footer {
         text-transform: uppercase;
         color: #947b69;
         margin-bottom: 14px;
+
+        /* Fondo decorativo de iconografía de cocina al imprimir */
+        .cookbook-sheet::after {
+            content: "";
+            display: block;
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image: url('../img/print-deco.svg');
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            opacity: 1;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+
+        /* Asegurar que el contenido quede por encima del fondo */
+        .cookbook-sheet > * {
+            position: relative;
+            z-index: 1;
+        }
     }
 
     .recipe-hero-panel {

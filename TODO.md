@@ -1,12 +1,26 @@
 # TODO - Mejoras de Seguridad y Robustez (Recetas)
 
 ## Control de respaldo
-- Ultima revision prebackup: 2026-03-18
+- Ultima revision prebackup: 2026-03-28
 
 
 ## Control de despliegue
-- Ultima revision predeploy: 2026-03-18
+- Ultima revision predeploy: 2026-03-28
 
+
+## Objetivo de negocio
+## Migracion MariaDB (2026-03-21)
+- [x] Eliminar fallback SQLite de config.py - solo MariaDB obligatorio.
+- [x] Separar entornos: desarrollo usa `dev_sabor_familia`, produccion usa `sabor_familia`.
+- [x] Crear `.env.prod` con credenciales de produccion (no versionado).
+- [x] Crear `.env.example` como plantilla publica de referencia.
+- [x] Script `setup_dev_db.py` para crear BD de desarrollo.
+- [x] Script `import_prod_sqlite.py` para migrar datos SQLite del servidor a MariaDB.
+- [x] Reescribir `backup_db.py` para MariaDB (exporta .sql).
+- [x] `deploy_to_server.py` sube `.env.prod` como `.env` y verifica conexion DB.
+- [x] Corregir error 500 por duplicado en `ingredient_price` al crear/editar recetas (validacion case-insensitive previa al insert).
+- [ ] Ejecutar `python import_prod_sqlite.py` para importar datos SQLite del servidor (pendiente de ventana de mantenimiento).
+- [ ] Verificar en 192.168.0.89 que la app usa `sabor_familia` en MariaDB despues del proximo deploy.
 
 ## Objetivo de negocio
 - Solo usuarios registrados y aprobados pueden ver recetas.

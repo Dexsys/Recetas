@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask import current_app
 from flask_login import UserMixin
+from sqlalchemy.orm import validates
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
 
@@ -10,9 +11,15 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), index=True, unique=True, nullable=False)
     email = db.Column(db.String(120), index=True, unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
-    role = db.Column(db.String(20), default='invitado') # admin, colaborador, invitado
+    role = db.Column(db.String(20), default='usuario') # admin, colaborador, usuario
+    is_approved = db.Column(db.Boolean, nullable=False, default=False)
     recipes = db.relationship('Recipe', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
+
+    @validates('email')
+    def _normalize_email(self, _key, value):
+        # Normaliza almacenamiento para evitar duplicados por mayusculas/espacios.
+        return (value or '').strip().lower()
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -31,7 +38,7 @@ class User(UserMixin, db.Model):
             data = serializer.loads(token, salt='password-reset-salt', max_age=max_age)
         except (BadSignature, SignatureExpired):
             return None
-        return User.query.get(data.get('user_id'))
+        return db.session.get(User, data.get('user_id'))
 
 class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -113,7 +120,7 @@ class SiteStats(db.Model):
 
     @classmethod
     def increment_total_visits(cls):
-        stats = cls.query.get(1)
+        stats = db.session.get(cls, 1)
         if not stats:
             stats = cls(id=1, total_visits=0)
             db.session.add(stats)

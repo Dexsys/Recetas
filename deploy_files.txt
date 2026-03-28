@@ -1,0 +1,20 @@
+# Lista de archivos y carpetas a desplegar (uno por línea)
+app.py
+config.py
+decorators.py
+extensions.py
+forms.py
+models.py
+requirements.txt
+wsgi.py
+static/
+templates/
+routes/
+instance/
+README.md
+historial.md
+TODO.md
+full_backup.py
+backup_db.py
+backup_to_github.py
+rich_text.py

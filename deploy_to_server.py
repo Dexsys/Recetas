@@ -30,20 +30,30 @@ DEFAULT_NGINX_SITE = "recetas"
 LOCAL    = Path(__file__).parent
 # ────────────────────────────────────────────────────────────────────────────
 
-# Fallback en caso de no poder leer archivos versionados con Git.
-FALLBACK_ITEMS = [
-    "app.py",
-    "backup_db.py",
-    "config.py",
-    "decorators.py",
-    "extensions.py",
-    "forms.py",
-    "models.py",
-    "requirements.txt",
-    "recetas.service",
-]
+# Fallback y obligatorios ahora se leen de archivos externos
+DEPLOY_FILES_LIST = LOCAL / "deploy_files.txt"
+MANDATORY_DOCS_LIST = LOCAL / "mandatory_docs.txt"
 
-MANDATORY_DOCS = ["historial.md", "TODO.md", "README.md"]
+def get_fallback_items():
+    if DEPLOY_FILES_LIST.exists():
+        items = []
+        for line in DEPLOY_FILES_LIST.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"): continue
+            items.append(line)
+        return items
+    return []
+
+def get_mandatory_docs():
+    if MANDATORY_DOCS_LIST.exists():
+        docs = []
+        for line in MANDATORY_DOCS_LIST.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"): continue
+            docs.append(line)
+        return docs
+    # fallback por compatibilidad
+    return ["historial.md", "TODO.md", "README.md"]
 
 
 def get_version_info():
@@ -229,7 +239,7 @@ def confirm_requirements_if_needed():
 
 
 def ensure_mandatory_docs_present():
-    missing = [name for name in MANDATORY_DOCS if not (LOCAL / name).exists()]
+    missing = [name for name in get_mandatory_docs() if not (LOCAL / name).exists()]
     if missing:
         print("[ERROR] Faltan archivos obligatorios de documentacion predeploy:")
         for item in missing:
@@ -237,23 +247,13 @@ def ensure_mandatory_docs_present():
         sys.exit(1)
 
 
-def get_items_to_deploy():
-    """Use tracked git files to avoid copying local basura to production."""
-    try:
-        result = subprocess.run(
-            ["git", "ls-files"],
-            cwd=str(LOCAL),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        items = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-        if items:
-            return items
-    except Exception as exc:
-        print(f"  [WARN] No se pudo leer git ls-files ({exc}). Usando fallback.")
+DEPLOY_FILES_LIST = LOCAL / "deploy_files.txt"
 
-    return [item for item in FALLBACK_ITEMS if (LOCAL / item).exists()]
+
+def get_items_to_deploy():
+    """Lee la lista de archivos a desplegar desde deploy_files.txt si existe, si no usa git ls-files o fallback."""
+    items = get_fallback_items()
+    return [item for item in items if (LOCAL / item).exists()]
 
 
 def get_untracked_items():
@@ -303,20 +303,262 @@ def progress(filename, size, sent):
     if sent == size:
         print()
 
-def main():
-    load_env_file(LOCAL / ".env")
-    ensure_mandatory_docs_present()
+def render_template(template: str, env_vars: dict) -> str:
+    for k, v in env_vars.items():
+        template = template.replace(f"${{{k}}}", str(v))
+    return template
 
+SERVICE_TEMPLATE = '''[Unit]
+Description=${APP_SERVICE_DESCRIPTION}
+After=network.target
+
+[Service]
+Type=${APP_TYPE}
+User=${APP_SERVICE_USER}
+Group=${APP_SERVICE_GROUP}
+WorkingDirectory=${APP_PATH}
+Environment="PATH=${APP_PATH}/.venv/bin"
+ExecStart=${APP_PATH}/.venv/bin/waitress-serve --host 127.0.0.1 --port ${APP_PORT} wsgi:app
+StandardError=${APP_PATH}/${APP_LOG_ERROR}
+StandardOutput=${APP_PATH}/${APP_LOG_ACCESS}
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+'''
+
+NGINX_TEMPLATE_BASIC = '''server {
+    listen 80;
+    server_name ${APP_PRD_HOST};
+
+    location / {
+        proxy_pass http://127.0.0.1:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 120s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
+    }
+
+    location /static {
+        alias ${APP_PATH}/static;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /uploads {
+        alias ${APP_PATH}/uploads;
+        expires 7d;
+        add_header Cache-Control "private";
+    }
+}
+'''
+
+NGINX_TEMPLATE_ADV = '''# Redirigir HTTP a HTTPS
+server {
+    listen 80;
+    server_name _;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name _;
+    #ssl_certificate /etc/nginx/ssl/cloudflare_origin.crt;
+    #ssl_certificate_key /etc/nginx/ssl/cloudflare_origin.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    client_max_body_size 50M;
+    access_log ${APP_PATH}access.log;
+    error_log ${APP_PATH}/logs/error.log;
+    location / {
+        proxy_pass http://127.0.0.1:${APP_PORT};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 120s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
+    }
+    location /static {
+        alias ${APP_PATH}/static;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+    location /uploads {
+        alias ${APP_PATH}/uploads;
+        expires 7d;
+        add_header Cache-Control "private";
+    }
+}
+'''
+
+def compare_and_sync_remote_file(ssh, local_path, remote_path, password):
+    import hashlib
+    import tempfile
+    from pathlib import Path
+    def file_hash(path):
+        h = hashlib.sha256()
+        with open(path, 'rb') as f:
+            while True:
+                chunk = f.read(8192)
+                if not chunk:
+                    break
+                h.update(chunk)
+        return h.hexdigest()
+    def remote_file_hash():
+        stdin, stdout, stderr = ssh.exec_command(f"sha256sum {shlex.quote(remote_path)} || echo MISSING")
+        out = stdout.read().decode().strip()
+        if 'No such file' in out or 'MISSING' in out:
+            return None
+        return out.split()[0]
+    if not Path(local_path).exists():
+        print(f"[ERROR] Archivo local no encontrado: {local_path}")
+        return
+    local_hash = file_hash(local_path)
+    remote_hash = remote_file_hash()
+    if remote_hash is None:
+        print(f"[INFO] El archivo remoto no existe. Se subirá el local.")
+        return 'upload'
+    if local_hash == remote_hash:
+        print(f"[OK] El archivo local y remoto son idénticos.")
+        return 'identical'
+    # Obtener fecha de modificación
+    local_mtime = Path(local_path).stat().st_mtime
+    stdin, stdout, stderr = ssh.exec_command(f'stat -c %Y {shlex.quote(remote_path)}')
+    remote_mtime_str = stdout.read().decode().strip()
+    try:
+        remote_mtime = int(remote_mtime_str)
+    except Exception:
+        remote_mtime = 0
+    import datetime
+    local_dt = datetime.datetime.fromtimestamp(local_mtime)
+    remote_dt = datetime.datetime.fromtimestamp(remote_mtime)
+    print(f"[WARN] Los archivos difieren:")
+    print(f"  Local : {local_path} ({local_dt})")
+    print(f"  Remoto: {remote_path} ({remote_dt})")
+    if local_mtime > remote_mtime:
+        print("  El archivo local es más nuevo.")
+        choice = input("¿Deseas subir el archivo local para reemplazar el remoto? [S/n]: ").strip().lower()
+        if choice in ("", "s", "si", "sí", "y", "yes"):
+            return 'upload'
+        else:
+            print("  No se realizó ninguna acción.")
+            return 'skip'
+    else:
+        print("  El archivo remoto es más nuevo.")
+        choice = input("¿Deseas descargar el archivo remoto para reemplazar el local? [S/n]: ").strip().lower()
+        if choice in ("", "s", "si", "sí", "y", "yes"):
+            # Descargar archivo remoto
+            import scp
+            with tempfile.NamedTemporaryFile(delete=False) as tmpf:
+                tmp_path = tmpf.name
+            with scp.SCPClient(ssh.get_transport()) as scp_client:
+                scp_client.get(remote_path, tmp_path)
+            Path(local_path).write_bytes(Path(tmp_path).read_bytes())
+            print(f"  [OK] Archivo local reemplazado por el remoto.")
+            return 'download'
+        else:
+            print("  No se realizó ninguna acción.")
+            return 'skip'
+
+def generate_dynamic_files(env_vars):
+    # .service
+    service_user = env_vars.get('APP_SERVICE_USER', 'ubuntu')
+    service_group = env_vars.get('APP_SERVICE_GROUP', 'ubuntu')
+    env_vars = dict(env_vars)
+    env_vars['APP_SERVICE_USER'] = service_user
+    env_vars['APP_SERVICE_GROUP'] = service_group
+    service_content = render_template(SERVICE_TEMPLATE, env_vars)
+    service_name = env_vars.get('APP_SERVICE_NAME', 'recetas') + '.service'
+    service_path = LOCAL / service_name
+    with open(service_path, 'w', encoding='utf-8') as f:
+        f.write(service_content)
+    print(f"[OK] Archivo {service_name} generado dinámicamente para el deploy.")
+    # nginx
+    if env_flag('NGINX_ENABLED', False):
+        nginx_mode = env_vars.get('NGINX_CONF_MODE', 'basic').lower()
+        if nginx_mode == 'advanced':
+            nginx_content = render_template(NGINX_TEMPLATE_ADV, env_vars)
+        else:
+            nginx_content = render_template(NGINX_TEMPLATE_BASIC, env_vars)
+        nginx_conf = env_vars.get('NGINX_SITE_NAME', 'nginx-recetas') + '.conf'
+        nginx_path = LOCAL / nginx_conf
+        with open(nginx_path, 'w', encoding='utf-8') as f:
+            f.write(nginx_content)
+        print(f"[OK] Archivo {nginx_conf} generado dinámicamente para Nginx.")
+def main():
+    # Verificar dependencias antes de cualquier otra acción
+    try:
+        import paramiko
+        import scp
+    except ImportError:
+        print("[ERROR] Faltan dependencias: paramiko y/o scp.")
+        print("Ejecuta: pip install paramiko scp")
+        sys.exit(1)
+
+    load_env_file(LOCAL / ".env")
+    env_vars = dict(os.environ)
+
+    # Verificar que existe .env.prod, si no, crearlo desde .env
+    env_prod_path = LOCAL / ".env.prod"
+    env_local_path = LOCAL / ".env"
+    if not env_prod_path.exists():
+        if env_local_path.exists():
+            env_prod_path.write_text(env_local_path.read_text(encoding="utf-8"), encoding="utf-8")
+            print("[WARN] .env.prod no existía, se creó a partir de .env local.")
+        else:
+            print("[ERROR] No existe .env ni .env.prod. No se puede continuar.")
+            sys.exit(1)
+
+    # --- Sincronización de archivos de servicio y nginx ---
     password = os.environ.get("DEPLOY_SSH_PASSWORD")
     service = os.environ.get("DEPLOY_SERVICE_NAME", DEFAULT_SERVICE)
-    remote_python = os.environ.get("DEPLOY_PYTHON", DEFAULT_REMOTE_PYTHON)
-    remote_venv = os.environ.get("DEPLOY_REMOTE_VENV", DEFAULT_REMOTE_VENV)
     nginx_conf = os.environ.get("DEPLOY_NGINX_CONF", DEFAULT_NGINX_CONF)
-    nginx_site = os.environ.get("DEPLOY_NGINX_SITE", DEFAULT_NGINX_SITE)
-
     if not password:
         print("[ERROR] Falta la variable de entorno DEPLOY_SSH_PASSWORD")
         print("        Definela en .env o en PowerShell: $env:DEPLOY_SSH_PASSWORD='tu_password'")
+        sys.exit(1)
+    # Conexión SSH temporal solo para comparar archivos
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh.connect(SERVER, PORT, USERNAME, password, timeout=15)
+    except Exception as e:
+        print(f"  [ERROR] Error de conexión para verificación: {e}")
+        sys.exit(1)
+    # Verificar archivo de servicio
+    local_service = LOCAL / (service + ".service")
+    remote_service = f"{REMOTE}/{service}.service"
+    compare_and_sync_remote_file(ssh, str(local_service), remote_service, password)
+    # Verificar archivo nginx
+    local_nginx = LOCAL / nginx_conf
+    remote_nginx = f"{REMOTE}/{nginx_conf}"
+    compare_and_sync_remote_file(ssh, str(local_nginx), remote_nginx, password)
+    ssh.close()
+
+    generate_dynamic_files(env_vars)
+    ensure_mandatory_docs_present()
+
+    # Verificar que existe .env.prod antes de continuar
+    env_prod_path = LOCAL / ".env.prod"
+    if not env_prod_path.exists():
+        print("[ERROR] No se encontro el archivo .env.prod")
+        print("        Este archivo contiene las credenciales de produccion")
+        print("        y se sube al servidor como .env durante el deploy.")
+        print("        Crea .env.prod usando .env.example como referencia.")
         sys.exit(1)
 
     version = update_docs_before_operation("Deploy a produccion ejecutado mediante deploy_to_server.py.")
@@ -374,6 +616,18 @@ def main():
             print(f"    (stderr) {err}")
         return status_code
 
+    def run_capture(cmd):
+        """Ejecuta comando remoto y retorna (codigo, stdout, stderr)."""
+        _, stdout, stderr = ssh.exec_command(cmd)
+        status_code = stdout.channel.recv_exit_status()
+        out = stdout.read().decode().strip()
+        err = stderr.read().decode().strip()
+        if out:
+            print(f"    {out}")
+        if err:
+            print(f"    (stderr) {err}")
+        return status_code, out, err
+
     def run_sudo(cmd):
         return run(f"echo {shlex.quote(password)} | sudo -S {cmd}")
 
@@ -414,6 +668,12 @@ def main():
 
     print("\n  [OK] Archivos copiados\n")
 
+    # ── 3.0. Subir .env.prod como .env en el servidor ────────────────────────
+    print("[3.0/4] Subiendo configuracion de produccion (.env.prod -> .env)...")
+    with SCPClient(ssh.get_transport()) as scp_env:
+        scp_env.put(str(env_prod_path), remote_path=f"{REMOTE}/.env")
+    print("  [OK] Configuracion de produccion subida\n")
+
     # Instalar dependencias en venv remoto y ejecutar migraciones.
     print("[3.1/4] Aplicando migraciones en servidor remoto...")
     remote_venv_python = f"{REMOTE}/{remote_venv}/bin/python"
@@ -429,10 +689,58 @@ def main():
     if run(f"cd {shlex.quote(REMOTE)} && {shlex.quote(remote_venv_python)} -m pip install -r requirements.txt") != 0:
         print("  [ERROR] Fallo instalando dependencias en el servidor.")
         sys.exit(1)
-    if run(f"cd {shlex.quote(REMOTE)} && FLASK_APP=app:create_app {shlex.quote(remote_venv_python)} -m flask db upgrade") != 0:
-        print("  [ERROR] Fallo aplicando migraciones en el servidor.")
-        sys.exit(1)
+    migration_cmd = (
+        f"cd {shlex.quote(REMOTE)} && "
+        f"FLASK_APP=app:create_app {shlex.quote(remote_venv_python)} -m flask db upgrade"
+    )
+    rc, out, err = run_capture(migration_cmd)
+    if rc != 0:
+        combined = f"{out}\n{err}".lower()
+        table_exists_signals = (
+            "already exists",
+            "table 'user' already exists",
+            "operationalerror: (1050",
+        )
+        if any(signal in combined for signal in table_exists_signals):
+            print("  [WARN] La base de datos ya tiene tablas, sincronizando Alembic con 'stamp head'...")
+            stamp_cmd = (
+                f"cd {shlex.quote(REMOTE)} && "
+                f"FLASK_APP=app:create_app {shlex.quote(remote_venv_python)} -m flask db stamp head"
+            )
+            if run(stamp_cmd) != 0:
+                print("  [ERROR] Fallo ejecutando 'flask db stamp head' en el servidor.")
+                sys.exit(1)
+            print("  [OK] Alembic sincronizado. Reintentando migraciones...")
+            if run(migration_cmd) != 0:
+                print("  [ERROR] Fallo aplicando migraciones tras 'stamp head'.")
+                sys.exit(1)
+        else:
+            print("  [ERROR] Fallo aplicando migraciones en el servidor.")
+            sys.exit(1)
     print("  [OK] Migraciones remotas aplicadas\n")
+
+    # ── 3.1.5. Verificar conexion a la base de datos ──────────────────────────
+    print("[3.1.5/4] Verificando conexion a la base de datos en servidor...")
+    _db_verify_script = (
+        "import sys; sys.path.insert(0, '.'); "
+        "from config import Config; "
+        "from urllib.parse import urlparse; "
+        "import pymysql; "
+        "u = urlparse(Config.SQLALCHEMY_DATABASE_URI); "
+        "c = pymysql.connect(host=u.hostname, port=u.port or 3306, "
+        "user=u.username, password=u.password, database=u.path.lstrip('/')); "
+        "c.close(); "
+        "print('  DB conectada: ' + u.path.lstrip('/'))"
+    )
+    _db_verify_cmd = (
+        f"cd {shlex.quote(REMOTE)} && "
+        f"{shlex.quote(remote_venv_python)} -c {shlex.quote(_db_verify_script)}"
+    )
+    if run(_db_verify_cmd) != 0:
+        print("  [ERROR] No se pudo verificar la conexion a la base de datos.")
+        print("          Revisa que .env.prod tenga DB_HOST, DB_USER, DB_PASSWORD y DB_NAME correctos.")
+        sys.exit(1)
+    print("  [OK] Base de datos accesible desde el servidor\n")
 
     # Validar e instalar unit file de systemd antes de reiniciar.
     print("[3.2/4] Instalando servicio systemd...")

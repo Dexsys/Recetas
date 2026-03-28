@@ -1,0 +1,4 @@
+# Archivos obligatorios para el deploy
+historial.md
+TODO.md
+README.md

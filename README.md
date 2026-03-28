@@ -4,9 +4,14 @@ Proyecto web en Flask para administrar recetas, usuarios, tecnicas y comentarios
 
 ## Estado
 
-- Version: 1.2026.0318
-- Ultima actualizacion: 2026-03-18
+- Version: 1.2026.0328
+- Ultima actualizacion: 2026-03-28
 - Entorno recomendado: .venv
+
+## Correcciones recientes (2026-03-21)
+
+- Corregido error 500 al crear/editar recetas cuando un ingrediente ya existia en `ingredient_price` (`Duplicate entry ... for key 'name'`, MariaDB 1062).
+- La validacion de auto-registro de precios de ingredientes en backend ahora consulta existencia case-insensitive antes de insertar.
 
 ## Requisitos
 
@@ -70,8 +75,25 @@ sudo journalctl -u recetas -n 30
 
 ## Base de datos
 
-- Archivo principal: instance/sabor_familia.db (si esta configurado en instancia).
-- El esquema se gestiona con migraciones Alembic (Flask-Migrate).
+- Motor: MariaDB (mysql+pymysql). El esquema se gestiona con Alembic (Flask-Migrate).
+- **Desarrollo**: base de datos `dev_sabor_familia` en 192.168.0.100
+- **Produccion**: base de datos `sabor_familia` en 192.168.0.100
+- La seleccion es automatica segun el archivo `.env` activo.
+
+### Configuracion de entornos
+
+| Entorno      | Archivo  | DB_NAME              | Cuando se usa             |
+|--------------|----------|----------------------|---------------------------|
+| Desarrollo   | `.env`   | `dev_sabor_familia`  | Maquina local             |
+| Produccion   | `.env.prod` | `sabor_familia`  | Servidor 192.168.0.89     |
+
+Para crear la base de datos de desarrollo por primera vez:
+
+   python setup_dev_db.py
+
+Para importar datos del SQLite del servidor a MariaDB (una sola vez):
+
+   python import_prod_sqlite.py
 
 ### Comandos de migracion
 
@@ -99,9 +121,29 @@ Con el entorno activo:
 
   python backup_db.py backup
 
+- Respaldo completo (DB + uploads + GitHub):
+
+   python full_backup.py
+
+- Respaldo completo sin push a GitHub:
+
+   python full_backup.py --skip-github
+
 - Listar backups:
 
   python backup_db.py listar
+
+- Restaurar backup:
+
+   python backup_db.py restaurar <nombre_archivo.sql>
+
+- Crear BD de desarrollo (primera vez):
+
+   python setup_dev_db.py
+
+- Importar datos SQLite del servidor a MariaDB produccion (una sola vez):
+
+   python import_prod_sqlite.py
 
 - Respaldo a GitHub (actualiza historial/readme antes de push):
 
@@ -135,7 +177,10 @@ Con el entorno activo:
 - Para envio real por correo, configurar en `.env`:
    - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USE_SSL`
    - `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_DEFAULT_SENDER`
+   - Opcional: `MAIL_CA_BUNDLE` (ruta a bundle CA PEM), `MAIL_TIMEOUT`
+   - Solo desarrollo: `MAIL_TLS_ALLOW_INVALID_CERT=1` para deshabilitar validacion TLS
 - Si SMTP no está configurado o falla, el enlace se registra en logs para soporte administrativo.
+- En macOS con Python de python.org, si hay errores de certificados tambien puedes ejecutar `Install Certificates.command`.
 
 ## Historial
 

@@ -69,6 +69,7 @@ def rename_ingredient_references(old_name, new_name):
 @admin_required
 def dashboard():
     users = User.query.all()
+    pending_users = User.query.filter_by(is_approved=False).order_by(User.id.desc()).all()
     pending_recipes = Recipe.query.filter_by(is_approved=False).all()
     pending_comments = Comment.query.filter_by(is_approved=False).all()
     categories = Category.query.all()
@@ -78,6 +79,7 @@ def dashboard():
     techniques = Technique.query.order_by(Technique.order).all()
     return render_template('admin/dashboard.html',
                          users=users,
+                         pending_users=pending_users,
                          pending_recipes=pending_recipes,
                          pending_comments=pending_comments,
                          categories=categories,
@@ -110,7 +112,7 @@ def approve_comment(comment_id):
 @login_required
 @admin_required
 def change_role(user_id, new_role):
-    if new_role not in ['admin', 'colaborador', 'invitado']:
+    if new_role not in ['admin', 'colaborador', 'usuario']:
         flash('Rol inválido.', 'error')
         return redirect(url_for('admin.dashboard'))
     user = User.query.get_or_404(user_id)
@@ -120,6 +122,58 @@ def change_role(user_id, new_role):
     user.role = new_role
     db.session.commit()
     flash(f'Rol de {user.username} cambiado a {new_role}.', 'success')
+    return redirect(url_for('admin.dashboard'))
+
+
+@bp.route('/approve_user/<int:user_id>')
+@login_required
+@admin_required
+def approve_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.role == 'admin':
+        user.is_approved = True
+        db.session.commit()
+        flash(f'La cuenta admin {user.username} ya está habilitada.', 'info')
+        return redirect(url_for('admin.dashboard'))
+
+    user.is_approved = True
+    db.session.commit()
+
+    from routes.auth import send_registration_approved_email
+    send_registration_approved_email(user)
+
+    flash(f'Usuario {user.username} aprobado para crear recetas.', 'success')
+    return redirect(url_for('admin.dashboard'))
+
+
+@bp.route('/reject_user/<int:user_id>')
+@login_required
+@admin_required
+def reject_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if user.role == 'admin':
+        flash('No puedes rechazar ni eliminar una cuenta administradora.', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+    if user.id == 1:
+        flash('No puedes eliminar el superusuario.', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+    from routes.auth import send_registration_rejected_email
+    send_registration_rejected_email(user)
+
+    # Limpieza defensiva por si el usuario alcanzó a crear contenido.
+    for recipe in user.recipes.all():
+        db.session.delete(recipe)
+    for comment in user.comments.all():
+        db.session.delete(comment)
+
+    username = user.username
+    db.session.delete(user)
+    db.session.commit()
+
+    flash(f'Usuario {username} rechazado y eliminado de la base de datos.', 'success')
     return redirect(url_for('admin.dashboard'))
 
 @bp.route('/add_item/<model_type>', methods=['POST'])

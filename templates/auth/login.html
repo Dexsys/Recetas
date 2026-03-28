@@ -14,7 +14,16 @@
         </p>
         <p>
             {{ form.password.label }}<br>
-            {{ form.password(size=32) }}
+            <span class="password-field">
+                {{ form.password(size=32, class_='password-input') }}
+                <button
+                    type="button"
+                    class="password-toggle"
+                    data-target="{{ form.password.id }}"
+                    aria-label="Mostrar contraseña"
+                    aria-pressed="false"
+                >👁</button>
+            </span>
             {% for error in form.password.errors %}
             <span class="error-msg">[{{ error }}]</span>
             {% endfor %}
