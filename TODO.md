@@ -12,7 +12,7 @@
 
 
 ## Control de despliegue
-- Ultima revision predeploy: 2026-03-22
+- Ultima revision predeploy: 2026-03-28
 >>>>>>> e94558180f7dfdbc023da4e15692cb4323499fc7
 
 
