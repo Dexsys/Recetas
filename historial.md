@@ -5,6 +5,7 @@
 **Repositorio**: https://github.com/Dexsys/Recetas
 
 ---
+<<<<<<< HEAD
 ## [1.2026.0328] - 2026-03-28
 
 ### Agregado
@@ -31,6 +32,8 @@
 
 ---
 
+=======
+>>>>>>> e94558180f7dfdbc023da4e15692cb4323499fc7
 ## [1.2026.0322] - 2026-03-22
 
 ### Agregado

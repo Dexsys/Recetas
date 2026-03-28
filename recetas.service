@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [Unit]
 Description=Servicio para la aplicación de gestion Recetas y sabores familiares
 After=network.target
@@ -20,3 +21,27 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
+=======
+[Unit]
+Description=Sistema de Gestión Recetas Familiares
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/Developer/Flask/Recetas
+Environment="PATH=/home/ubuntu/Developer/Flask/Recetas/.venv/bin"
+ExecStart=/home/ubuntu/Developer/Flask/Recetas/.venv/bin/gunicorn \
+    --config /home/ubuntu/Developer/Flask/Recetas/gunicorn_config.py \
+    wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+>>>>>>> e94558180f7dfdbc023da4e15692cb4323499fc7

@@ -4,8 +4,13 @@ Proyecto web en Flask para administrar recetas, usuarios, tecnicas y comentarios
 
 ## Estado
 
+<<<<<<< HEAD
 - Version: 1.2026.0328
 - Ultima actualizacion: 2026-03-28
+=======
+- Version: 1.2026.0328
+- Ultima actualizacion: 2026-03-28
+>>>>>>> e94558180f7dfdbc023da4e15692cb4323499fc7
 - Entorno recomendado: .venv
 
 ## Correcciones recientes (2026-03-21)
